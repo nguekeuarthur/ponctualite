@@ -181,12 +181,31 @@ fait_passage = (
 )
 ecrire(fait_passage, "gold.fait_passage")
 
-# Un enregistrement par jour et par trajet suivi : la course prise au départ, et son arrivée réelle
+# Un enregistrement par jour et par trajet suivi : la course prise au départ, et son arrivée réelle.
+# La course retenue est la PREMIÈRE de la ligne qui part de l'arrêt à l'heure habituelle ou dans les minutes
+# qui suivent (tolérance : clé « tolerance_min », 10 min par défaut) : un horaire de vacances décalé de quelques
+# minutes (par exemple 07:24 au lieu de 07:19) reste ainsi « mon bus ».
+import re
+
+
+def plus_minutes(hhmm, minutes):
+    h, m = map(int, hhmm.split(":"))
+    total = h * 60 + m + minutes
+    return f"{total // 60:02d}:{total % 60:02d}"
+
+
 morceaux = []
 for t in CONFIG["trajets"]:
+    if not re.fullmatch(r"\d{2}:\d{2}", t["heure_depart"]):
+        print(f"Trajet « {t['nom']} » ignoré : heure de départ à confirmer")
+        continue
+    debut, fin = t["heure_depart"], plus_minutes(t["heure_depart"], t.get("tolerance_min", 10))
+    premier_du_jour = Window.partitionBy("jour").orderBy("depart_prevu")
     depart = (
-        s.filter((F.col("operateur") == t["operateur"]) & (F.col("ligne") == t["ligne"])
-                 & (F.col("arret") == t["depart"]) & (F.date_format("depart_prevu", "HH:mm") == t["heure_depart"]))
+        s.filter((F.col("operateur") == t["operateur"]) & (F.col("ligne") == t["ligne"]) & (F.col("arret") == t["depart"])
+                 & (F.date_format("depart_prevu", "HH:mm") >= debut) & (F.date_format("depart_prevu", "HH:mm") <= fin))
+        .withColumn("rang", F.row_number().over(premier_du_jour))
+        .filter("rang = 1")
         .select("jour", "course_id", "operateur", "ligne", "arret", "depart_prevu", "depart_reel", "depart_statut",
                 F.col("retard_depart_min"), F.col("supprime").alias("supprime_au_depart"))
         .withColumnRenamed("arret", "arret_depart")
