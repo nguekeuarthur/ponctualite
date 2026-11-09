@@ -53,6 +53,10 @@ Eventhouse Ponctualite_TR, table departs : un instantané par relevé et par dé
 
 Le train régional est le maillon faible : un jour sur cinq, il arrive avec plus de 3 minutes de retard.
 
+Un trajet suivi est défini par un arrêt de départ, une ligne et une heure habituelle ; la course retenue chaque jour
+est la première de la ligne à partir de cette heure (tolérance de 10 minutes), ce qui absorbe les horaires de vacances
+décalés de quelques minutes. Un passage est ponctuel si son retard à l'arrivée est inférieur à 3 minutes, comme aux CFF.
+
 ## Confidentialité
 
 Le périmètre (arrêts, lignes, trajets suivis) est décrit dans `config/trajets.json`, **qui n'est pas publié** :
