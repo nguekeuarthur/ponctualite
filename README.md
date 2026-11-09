@@ -101,8 +101,11 @@ La capacité d'essai n'exécute qu'un travail Spark à la fois : attendre la fin
 05:00–09:59 et une étiquette « conditions du matin » (neige au sol, gel, pluie, vent fort, bruine, sec).
 `Transformer_Passages` l'accroche à chaque trajet suivi par la station de l'arrêt de départ.
 
-Chaîne quotidienne planifiée dans Fabric : `Charger_Istdaten` à 06:00, `Charger_Meteo` à 06:15, `Transformer_Passages` à 06:30
-(heure suisse). Le collecteur temps réel tourne toutes les 5 minutes.
+Chaîne quotidienne planifiée dans Fabric (heure suisse) : `Charger_Istdaten` à 06:00, `Charger_Meteo` à 06:15,
+`Transformer_Passages` à 06:30, et `Predire_Retards` à 20:00 pour le lendemain. Le collecteur temps réel tourne toutes
+les 5 minutes. Attention : un gros travail Spark (rechargement d'archives) sature la capacité d'essai, fait échouer les
+exécutions planifiées et Fabric suspend alors la planification après quelques échecs ; la réactiver avec
+`fab job run-update <notebook> --id <planification> --enable`.
 Les fichiers des archives s'appellent `AAAA-MM-JJ_IstDaten.csv` (majuscules) alors que les quotidiens en ligne
 s'appellent `AAAA-MM-JJ_istdaten.csv`.
 
