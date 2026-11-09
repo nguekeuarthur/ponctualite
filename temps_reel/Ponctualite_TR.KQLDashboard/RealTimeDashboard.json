@@ -1,0 +1,548 @@
+{
+  "schema_version": "60",
+  "autoRefresh": {
+    "enabled": true,
+    "defaultInterval": "5m"
+  },
+  "baseQueries": [],
+  "dataSources": [
+    {
+      "id": "aafba942-b9ad-5ab0-a304-f6ce8734edce",
+      "name": "Ponctualite_TR",
+      "kind": "kusto-trident",
+      "scopeId": "kusto-trident",
+      "clusterUri": "https://trd-bp2z7a3rjmcazqk89v.z6.kusto.fabric.microsoft.com",
+      "database": "51835a78-0070-41a0-915a-900ed173fb7d",
+      "workspace": "6501a002-4c79-4ada-aa1e-3b65a5bf1f9b"
+    }
+  ],
+  "pages": [
+    {
+      "id": "c6fe8623-9e96-5389-9a1c-1bc884df20cd",
+      "name": "En direct"
+    },
+    {
+      "id": "907d7b8a-ff74-5306-b403-20baafc9bf14",
+      "name": "Anticipation"
+    }
+  ],
+  "parameters": [
+    {
+      "kind": "duration",
+      "id": "790d928d-3110-5a60-9bc4-58896bd22909",
+      "displayName": "Période",
+      "description": "",
+      "beginVariableName": "_startTime",
+      "endVariableName": "_endTime",
+      "defaultValue": {
+        "kind": "dynamic",
+        "count": 12,
+        "unit": "hours"
+      },
+      "showOnPages": {
+        "kind": "all"
+      }
+    }
+  ],
+  "queries": [
+    {
+      "id": "3bf37650-ef7d-5fb9-9b3a-9d8dc1c3dcfc",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "let dernier = toscalar(departs | summarize max(releve));\nlet instantane = departs | where releve > dernier - 2m;\nprint ['Dernier relevé'] = format_datetime(datetime_utc_to_local(dernier, 'Europe/Zurich'), 'HH:mm:ss')",
+      "usedVariables": []
+    },
+    {
+      "id": "6c0860ed-690a-5225-8f3f-d2c73ba6021d",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "let dernier = toscalar(departs | summarize max(releve));\nlet instantane = departs | where releve > dernier - 2m;\ninstantane | where depart_prevu >= now() - 2m | summarize ['Départs annoncés'] = count()",
+      "usedVariables": []
+    },
+    {
+      "id": "0664e6c5-27bc-5750-b9ee-42847878fb96",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "let dernier = toscalar(departs | summarize max(releve));\nlet instantane = departs | where releve > dernier - 2m;\ninstantane | where depart_prevu >= now() - 2m | summarize ['Retard moyen annoncé (min)'] = round(avg(retard_min), 1)",
+      "usedVariables": []
+    },
+    {
+      "id": "a58add64-9f16-543a-9c6e-d473d8c021ae",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "let dernier = toscalar(departs | summarize max(releve));\nlet instantane = departs | where releve > dernier - 2m;\ninstantane | where depart_prevu >= now() - 2m | summarize ['Annulés ou non desservis'] = countif(annule or non_desservi)",
+      "usedVariables": []
+    },
+    {
+      "id": "298a08a7-880f-500f-98db-b23deb34b173",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "let dernier = toscalar(departs | summarize max(releve));\nlet instantane = departs | where releve > dernier - 2m;\ninstantane\n| where depart_prevu >= now() - 2m\n| project ['Arrêt'] = arret, ['Prévu'] = format_datetime(datetime_utc_to_local(depart_prevu, 'Europe/Zurich'), 'HH:mm'), ['Estimé'] = format_datetime(datetime_utc_to_local(coalesce(depart_estime, depart_prevu), 'Europe/Zurich'), 'HH:mm'),\n    ['Retard (min)'] = retard_min, Ligne = strcat(mode, ' ', ligne), Destination = destination,\n    Quai = coalesce(quai_estime, quai_prevu), ['Perturbé'] = annule or non_desservi, tri = depart_prevu\n| order by ['Arrêt'] asc, tri asc\n| project-away tri",
+      "usedVariables": []
+    },
+    {
+      "id": "cd3a449a-c630-531a-a66c-e797aadab121",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "let dernier = toscalar(departs | summarize max(releve));\nlet instantane = departs | where releve > dernier - 2m;\ninstantane\n| where depart_prevu >= now() - 2m and isnotnull(retard_min)\n| summarize ['Retard moyen (min)'] = round(avg(retard_min), 1) by Ligne = strcat(mode, ' ', ligne)\n| order by ['Retard moyen (min)'] desc",
+      "usedVariables": []
+    },
+    {
+      "id": "ce05c784-cfa5-55bb-b657-69a7f049555d",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "departs\n| where releve between (_startTime .. _endTime)\n| where ligne in ('IR90', 'RE33', 'IC1', 'R1', 'R2', '28', '360', '362', 'm1') and isnotnull(retard_min)\n| summarize ['Retard moyen (min)'] = round(avg(retard_min), 1) by bin(releve, 5m), Ligne = ligne\n| order by releve asc",
+      "usedVariables": [
+        "_startTime",
+        "_endTime"
+      ]
+    },
+    {
+      "id": "e907eac9-98fa-5d41-8049-0c4bc13c537f",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "departs\n| where releve between (_startTime .. _endTime)\n| where annule or non_desservi\n| summarize arg_max(releve, *) by course_ref, arret\n| project ['Vu à'] = format_datetime(datetime_utc_to_local(releve, 'Europe/Zurich'), 'HH:mm'), ['Arrêt'] = arret,\n    ['Prévu'] = format_datetime(datetime_utc_to_local(depart_prevu, 'Europe/Zurich'), 'HH:mm'), Ligne = strcat(mode, ' ', ligne), Destination = destination,\n    Motif = iff(annule, 'Course annulée', 'Arrêt non desservi')\n| order by ['Vu à'] desc",
+      "usedVariables": [
+        "_startTime",
+        "_endTime"
+      ]
+    },
+    {
+      "id": "37f7b1af-e14b-5e1b-9154-7d3c26b72550",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "departs\n| where releve between (_startTime .. _endTime) and isnotnull(retard_min)\n| where ligne in ('IR90', 'RE33', 'IC1', 'R1', 'R2', '28', '360', '362', 'm1')\n| extend ['Minutes avant le départ'] = 5 * bin(datetime_diff('minute', depart_prevu, releve), 5)\n| where ['Minutes avant le départ'] between (0 .. 60)\n| summarize ['Retard moyen annoncé (min)'] = round(avg(retard_min), 2),\n    ['Part des départs à 3 min ou plus (%)'] = round(100.0 * countif(retard_min >= 3) / count(), 1)\n    by ['Minutes avant le départ']\n| order by ['Minutes avant le départ'] desc",
+      "usedVariables": [
+        "_startTime",
+        "_endTime"
+      ]
+    },
+    {
+      "id": "984e170c-da1b-5e52-866a-eb461ab024ce",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "departs\n| where releve between (_startTime .. _endTime) and isnotnull(retard_min)\n| where ligne in ('IR90', 'RE33', 'IC1', 'R1', 'R2', '28', '360', '362', 'm1')\n| extend ['Minutes avant le départ'] = datetime_diff('minute', depart_prevu, releve)\n| where ['Minutes avant le départ'] between (0 .. 60)\n| summarize retard_final = arg_min(['Minutes avant le départ'], retard_min), retard_premier = arg_max(['Minutes avant le départ'], retard_min), releves = count() by course_ref, arret\n| where releves >= 3\n| summarize ['Courses suivies'] = count(), ['Retard connu dès la 1re annonce (%)'] = round(100.0 * countif(abs(retard_final - retard_premier) < 1) / count(), 1)",
+      "usedVariables": [
+        "_startTime",
+        "_endTime"
+      ]
+    }
+  ],
+  "tiles": [
+    {
+      "id": "03ab4090-ca4a-5115-b1c9-50b447b8eb43",
+      "title": "Dernier relevé",
+      "visualType": "card",
+      "pageId": "c6fe8623-9e96-5389-9a1c-1bc884df20cd",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 6,
+        "height": 3
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "3bf37650-ef7d-5fb9-9b3a-9d8dc1c3dcfc"
+      },
+      "visualOptions": {
+        "multiStat__textSize": "auto",
+        "multiStat__valueColumn": null,
+        "colorRulesDisabled": false,
+        "colorStyle": "light",
+        "colorRules": []
+      }
+    },
+    {
+      "id": "67f80d51-2108-5f3d-a749-bb4b797d2ccc",
+      "title": "Départs annoncés à mes arrêts",
+      "visualType": "card",
+      "pageId": "c6fe8623-9e96-5389-9a1c-1bc884df20cd",
+      "layout": {
+        "x": 6,
+        "y": 0,
+        "width": 6,
+        "height": 3
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "6c0860ed-690a-5225-8f3f-d2c73ba6021d"
+      },
+      "visualOptions": {
+        "multiStat__textSize": "auto",
+        "multiStat__valueColumn": null,
+        "colorRulesDisabled": false,
+        "colorStyle": "light",
+        "colorRules": []
+      }
+    },
+    {
+      "id": "24b68380-5e71-5abb-9739-11b158b3fd0c",
+      "title": "Retard moyen annoncé",
+      "visualType": "card",
+      "pageId": "c6fe8623-9e96-5389-9a1c-1bc884df20cd",
+      "layout": {
+        "x": 12,
+        "y": 0,
+        "width": 6,
+        "height": 3
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "0664e6c5-27bc-5750-b9ee-42847878fb96"
+      },
+      "visualOptions": {
+        "multiStat__textSize": "auto",
+        "multiStat__valueColumn": null,
+        "colorRulesDisabled": false,
+        "colorStyle": "light",
+        "colorRules": []
+      }
+    },
+    {
+      "id": "7ccfa53d-32de-57c8-ac7e-c8467a17bb9d",
+      "title": "Annulés ou non desservis",
+      "visualType": "card",
+      "pageId": "c6fe8623-9e96-5389-9a1c-1bc884df20cd",
+      "layout": {
+        "x": 18,
+        "y": 0,
+        "width": 6,
+        "height": 3
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "a58add64-9f16-543a-9c6e-d473d8c021ae"
+      },
+      "visualOptions": {
+        "multiStat__textSize": "auto",
+        "multiStat__valueColumn": null,
+        "colorRulesDisabled": false,
+        "colorStyle": "light",
+        "colorRules": []
+      }
+    },
+    {
+      "id": "e5818297-f308-514f-8788-458229254e51",
+      "title": "Prochains départs (dernier relevé)",
+      "visualType": "table",
+      "pageId": "c6fe8623-9e96-5389-9a1c-1bc884df20cd",
+      "layout": {
+        "x": 0,
+        "y": 3,
+        "width": 16,
+        "height": 10
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "298a08a7-880f-500f-98db-b23deb34b173"
+      },
+      "visualOptions": {
+        "table__enableRenderLinks": false,
+        "colorRulesDisabled": false,
+        "colorStyle": "light",
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "crossFilter": [],
+        "drillthrough": [],
+        "table__renderLinks": [],
+        "colorRules": [
+          {
+            "id": "645024b7-6d0c-5d6e-b292-a1e84ccd3d63",
+            "ruleType": "colorByCondition",
+            "applyToColumn": "Retard (min)",
+            "hideText": false,
+            "applyTo": "cells",
+            "conditions": [
+              {
+                "operator": ">=",
+                "column": "Retard (min)",
+                "values": [
+                  "3"
+                ]
+              }
+            ],
+            "chainingOperator": "and",
+            "colorStyle": "bold",
+            "color": "red",
+            "tag": "",
+            "icon": "warning",
+            "ruleName": "",
+            "visualType": "table"
+          },
+          {
+            "id": "50953928-83ff-5ac5-84d5-6d87c3d4eb09",
+            "ruleType": "colorByCondition",
+            "applyToColumn": "Retard (min)",
+            "hideText": false,
+            "applyTo": "cells",
+            "conditions": [
+              {
+                "operator": "<",
+                "column": "Retard (min)",
+                "values": [
+                  "3"
+                ]
+              }
+            ],
+            "chainingOperator": "and",
+            "colorStyle": "bold",
+            "color": "green",
+            "tag": "",
+            "icon": null,
+            "ruleName": "",
+            "visualType": "table"
+          },
+          {
+            "id": "17b5ff76-f70a-5465-b0d2-0edad4af5e23",
+            "ruleType": "colorByCondition",
+            "applyToColumn": "Perturbé",
+            "hideText": false,
+            "applyTo": "cells",
+            "conditions": [
+              {
+                "operator": "==",
+                "column": "Perturbé",
+                "values": [
+                  "true"
+                ]
+              }
+            ],
+            "chainingOperator": "and",
+            "colorStyle": "bold",
+            "color": "red",
+            "tag": "",
+            "icon": "critical",
+            "ruleName": "",
+            "visualType": "table"
+          }
+        ]
+      }
+    },
+    {
+      "id": "4335f4dd-17b4-594e-b88b-b2704f10e8b8",
+      "title": "Retard moyen annoncé par ligne",
+      "visualType": "bar",
+      "pageId": "c6fe8623-9e96-5389-9a1c-1bc884df20cd",
+      "layout": {
+        "x": 16,
+        "y": 3,
+        "width": 8,
+        "height": 10
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "cd3a449a-c630-531a-a66c-e797aadab121"
+      },
+      "visualOptions": {
+        "multipleYAxes": {
+          "base": {
+            "id": "-1",
+            "label": "",
+            "columns": [],
+            "yAxisScale": "linear",
+            "yAxisMaximumValue": null,
+            "yAxisMinimumValue": null,
+            "horizontalLines": []
+          },
+          "additional": [],
+          "showMultiplePanels": false
+        },
+        "seriesColors": {},
+        "hideLegend": true,
+        "legendLocation": "bottom",
+        "xColumnTitle": "",
+        "xColumn": "Ligne",
+        "yColumns": [
+          "Retard moyen (min)"
+        ],
+        "seriesColumns": null,
+        "xAxisScale": "linear",
+        "verticalLine": "",
+        "crossFilter": [],
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "forceAxisTicks": false,
+        "drillthrough": [],
+        "selectedDataOnLoad": {
+          "all": true,
+          "limit": 10
+        }
+      }
+    },
+    {
+      "id": "87554d2d-6f03-5218-9ee6-296c69fd4ae1",
+      "title": "Retard annoncé au fil des relevés, lignes suivies",
+      "visualType": "line",
+      "pageId": "c6fe8623-9e96-5389-9a1c-1bc884df20cd",
+      "layout": {
+        "x": 0,
+        "y": 13,
+        "width": 16,
+        "height": 8
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "ce05c784-cfa5-55bb-b657-69a7f049555d"
+      },
+      "visualOptions": {
+        "multipleYAxes": {
+          "base": {
+            "id": "-1",
+            "label": "",
+            "columns": [],
+            "yAxisScale": "linear",
+            "yAxisMaximumValue": null,
+            "yAxisMinimumValue": null,
+            "horizontalLines": []
+          },
+          "additional": [],
+          "showMultiplePanels": false
+        },
+        "seriesColors": {},
+        "hideLegend": false,
+        "legendLocation": "bottom",
+        "xColumnTitle": "",
+        "xColumn": "releve",
+        "yColumns": [
+          "Retard moyen (min)"
+        ],
+        "seriesColumns": [
+          "Ligne"
+        ],
+        "xAxisScale": "linear",
+        "verticalLine": "",
+        "crossFilter": [],
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "forceAxisTicks": false,
+        "drillthrough": [],
+        "selectedDataOnLoad": {
+          "all": true,
+          "limit": 10
+        }
+      }
+    },
+    {
+      "id": "c3c12ebf-d803-5057-850d-56648d4a97a9",
+      "title": "Perturbations vues sur la période",
+      "visualType": "table",
+      "pageId": "c6fe8623-9e96-5389-9a1c-1bc884df20cd",
+      "layout": {
+        "x": 16,
+        "y": 13,
+        "width": 8,
+        "height": 8
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "e907eac9-98fa-5d41-8049-0c4bc13c537f"
+      },
+      "visualOptions": {
+        "table__enableRenderLinks": false,
+        "colorRulesDisabled": false,
+        "colorStyle": "light",
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "crossFilter": [],
+        "drillthrough": [],
+        "table__renderLinks": [],
+        "colorRules": []
+      }
+    },
+    {
+      "id": "5e042430-de22-5a20-986c-593c60eb00a1",
+      "title": "À combien de minutes du départ le retard est-il annoncé ?",
+      "visualType": "line",
+      "pageId": "907d7b8a-ff74-5306-b403-20baafc9bf14",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 16,
+        "height": 10
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "37f7b1af-e14b-5e1b-9154-7d3c26b72550"
+      },
+      "visualOptions": {
+        "multipleYAxes": {
+          "base": {
+            "id": "-1",
+            "label": "",
+            "columns": [],
+            "yAxisScale": "linear",
+            "yAxisMaximumValue": null,
+            "yAxisMinimumValue": null,
+            "horizontalLines": []
+          },
+          "additional": [],
+          "showMultiplePanels": false
+        },
+        "seriesColors": {},
+        "hideLegend": false,
+        "legendLocation": "bottom",
+        "xColumnTitle": "",
+        "xColumn": "Minutes avant le départ",
+        "yColumns": [
+          "Retard moyen annoncé (min)",
+          "Part des départs à 3 min ou plus (%)"
+        ],
+        "seriesColumns": null,
+        "xAxisScale": "linear",
+        "verticalLine": "",
+        "crossFilter": [],
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "forceAxisTicks": false,
+        "drillthrough": [],
+        "selectedDataOnLoad": {
+          "all": true,
+          "limit": 10
+        }
+      }
+    },
+    {
+      "id": "b596a58b-88e1-5454-92b7-b5e5c0db05b2",
+      "title": "Courses suivies sur la période",
+      "visualType": "card",
+      "pageId": "907d7b8a-ff74-5306-b403-20baafc9bf14",
+      "layout": {
+        "x": 16,
+        "y": 0,
+        "width": 8,
+        "height": 10
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "984e170c-da1b-5e52-866a-eb461ab024ce"
+      },
+      "visualOptions": {
+        "multiStat__textSize": "auto",
+        "multiStat__valueColumn": null,
+        "colorRulesDisabled": false,
+        "colorStyle": "light",
+        "colorRules": []
+      }
+    }
+  ]
+}

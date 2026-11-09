@@ -102,6 +102,26 @@ Après la création de nouvelles tables dans le lakehouse, forcer la synchronisa
 ne voit pas les tables. Dans le rapport, la mise en forme conditionnelle des matrices exige un sélecteur à deux clés
 (`dataViewWildcard` + `metadata`), sans quoi elle est ignorée en silence.
 
+```powershell
+# 6. Tableau de bord temps réel (Real-Time Dashboard sur l'Eventhouse), généré par script
+python .\ponctualite\temps_reel\generer_tableau_de_bord.py
+.\ponctualite\fab.ps1 import "Ponctualite.Workspace/Ponctualite_TR.KQLDashboard" -i .\ponctualite\temps_reel\Ponctualite_TR.KQLDashboard -f
+```
+
+La définition suit la structure des tableaux de bord publiés par Microsoft dans `fabric-toolbox` (schéma 60) ; un
+`icon` vide dans une règle de couleur ou une clé `title` à la racine font échouer le chargement.
+
+## Le tableau de bord temps réel
+
+Deux pages, rafraîchies toutes les 5 minutes, sur la table `departs` de l'Eventhouse :
+
+1. **En direct** : heure du dernier relevé, départs annoncés à mes arrêts, retard moyen annoncé, annulations ;
+   table des prochains départs (retard en rouge dès 3 minutes), retard moyen par ligne, courbe du retard annoncé
+   au fil des relevés, perturbations vues sur la période.
+2. **Anticipation** : à combien de minutes du départ le retard est-il annoncé ? Retard moyen et part des départs à
+   3 minutes ou plus selon le temps restant avant le départ, et part des courses dont le retard était connu dès la
+   première annonce. Cette page prend son sens avec quelques semaines de relevés.
+
 ## Le rapport
 
 Trois pages, en Direct Lake sur le modèle gold :
@@ -129,6 +149,9 @@ ponctualite/
 │   ├── generer_rapport.py             génère le rapport PBIR (3 pages, 29 visuels)
 │   ├── verifier.py                    exécute une requête DAX sur le modèle
 │   └── theme/                         thème Power BI de base
+├── temps_reel/
+│   ├── generer_tableau_de_bord.py     génère le Real-Time Dashboard (2 pages, 10 tuiles)
+│   └── Ponctualite_TR.KQLDashboard/   définition générée
 ├── scripts/
 │   └── tester_ojp.py                  prochains départs d'un arrêt, en ligne de commande
 ├── .env                           clé OJP (jamais publiée)
