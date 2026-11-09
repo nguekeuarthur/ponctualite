@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "meteo_07",
+  "position": {
+    "x": 1020,
+    "y": 100,
+    "z": 7,
+    "width": 240,
+    "height": 100,
+    "tabOrder": 7
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "Précipitations du matin (mm)"
+                }
+              },
+              "queryRef": "fait_trajet.Précipitations du matin (mm)",
+              "nativeQueryRef": "Précipitations du matin (mm)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

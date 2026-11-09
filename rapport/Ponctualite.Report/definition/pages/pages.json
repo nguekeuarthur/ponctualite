@@ -3,7 +3,8 @@
   "pageOrder": [
     "trajets",
     "lignes",
-    "alternatives"
+    "alternatives",
+    "meteo"
   ],
   "activePageName": "trajets"
 }

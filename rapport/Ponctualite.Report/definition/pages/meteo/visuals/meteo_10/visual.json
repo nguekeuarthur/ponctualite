@@ -1,0 +1,115 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "meteo_10",
+  "position": {
+    "x": 20,
+    "y": 465,
+    "z": 10,
+    "width": 620,
+    "height": 235,
+    "tabOrder": 10
+  },
+  "visual": {
+    "visualType": "scatterChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "jour"
+                }
+              },
+              "queryRef": "fait_trajet.jour",
+              "nativeQueryRef": "jour",
+              "active": true
+            }
+          ]
+        },
+        "X": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "Température min. du matin (°C)"
+                }
+              },
+              "queryRef": "fait_trajet.Température min. du matin (°C)",
+              "nativeQueryRef": "Température min. du matin (°C)"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "Retard moyen (min)"
+                }
+              },
+              "queryRef": "fait_trajet.Retard moyen (min)",
+              "nativeQueryRef": "Retard moyen (min)"
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "trajet"
+                }
+              },
+              "queryRef": "fait_trajet.trajet",
+              "nativeQueryRef": "trajet"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Chaque jour : température minimale du matin et retard à l'arrivée'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

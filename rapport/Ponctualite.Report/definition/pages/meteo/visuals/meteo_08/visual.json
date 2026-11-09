@@ -1,0 +1,97 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "meteo_08",
+  "position": {
+    "x": 20,
+    "y": 220,
+    "z": 8,
+    "width": 500,
+    "height": 230,
+    "tabOrder": 8
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "conditions_matin"
+                }
+              },
+              "queryRef": "fait_trajet.conditions_matin",
+              "nativeQueryRef": "conditions_matin",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "Ponctualité"
+                }
+              },
+              "queryRef": "fait_trajet.Ponctualité",
+              "nativeQueryRef": "Ponctualité"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "fait_trajet"
+                  }
+                },
+                "Property": "Ponctualité"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Ponctualité selon les conditions du matin'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

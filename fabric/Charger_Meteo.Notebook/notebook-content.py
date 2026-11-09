@@ -30,7 +30,8 @@
 # - **silver.meteo_heure** : une ligne par station et par heure, valeurs typées, heure locale.
 # - **gold.meteo_jour** : par station et par jour, les indicateurs utiles aux trajets du matin
 #   (températures, précipitations, rafales, neige au sol entre 05:00 et 09:00) et une étiquette « conditions du matin ».
-# - **gold.station_meteo** : nom, altitude et coordonnées des stations.
+# - **gold.station_meteo** : nom, altitude et coordonnées des stations (fichier de métadonnées encodé en Windows-1252,
+#   lu en ISO-8859-1 car Spark ne connaît pas cp1252).
 
 # CELL ********************
 
@@ -202,7 +203,8 @@ ecrire(meteo_jour, "gold.meteo_jour")
 chemin_stations = f"{RACINE_LOCALE}/{DOSSIER}/ogd-smn_meta_stations.csv"
 telecharger(URL_STATIONS, chemin_stations)
 stations = (
-    spark.read.option("header", True).option("sep", ";").option("encoding", "cp1252").csv(f"Files/{DOSSIER}/ogd-smn_meta_stations.csv")
+    # Spark n'accepte que quelques jeux de caractères (pas cp1252) : ISO-8859-1 suffit pour les accents des noms
+    spark.read.option("header", True).option("sep", ";").option("encoding", "ISO-8859-1").csv(f"Files/{DOSSIER}/ogd-smn_meta_stations.csv")
     .filter(F.col("station_abbr").isin(STATIONS))
     .select(
         F.col("station_abbr").alias("station"),
