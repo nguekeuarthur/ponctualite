@@ -220,6 +220,21 @@ fait_trajet = (
     .withColumn("ponctuel", F.when(F.col("supprime"), F.lit(False)).otherwise(F.col("ponctuel")))
     .join(dim_date.select("jour", "nom_jour", "jour_ouvre"), "jour", "left")
 )
+
+# Météo du matin à la station associée à l'arrêt de départ (si le notebook Charger_Meteo a déjà tourné)
+COLONNES_METEO = ["temp_matin", "temp_min_matin", "precip_matin_mm", "precip_jour_mm", "rafale_max_matin_ms",
+                  "neige_cm_matin", "conditions_matin"]
+if spark.catalog.tableExists("gold.meteo_jour") and CONFIG.get("stations_meteo"):
+    correspondance = spark.createDataFrame(
+        [(arret, station) for station, arrets in CONFIG["stations_meteo"].items() for arret in arrets],
+        "arret_depart string, station_meteo string",
+    )
+    meteo = spark.table("gold.meteo_jour").select("station", "jour", *COLONNES_METEO).withColumnRenamed("station", "station_meteo")
+    fait_trajet = fait_trajet.join(correspondance, "arret_depart", "left").join(meteo, ["station_meteo", "jour"], "left")
+else:
+    fait_trajet = fait_trajet.withColumn("station_meteo", F.lit(None).cast("string"))
+    for c in COLONNES_METEO:
+        fait_trajet = fait_trajet.withColumn(c, F.lit(None).cast("string" if c == "conditions_matin" else "double"))
 ecrire(fait_trajet, "gold.fait_trajet")
 
 fait_trajet.orderBy("trajet", "jour").select(

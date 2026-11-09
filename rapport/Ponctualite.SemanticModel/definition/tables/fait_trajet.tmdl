@@ -160,6 +160,64 @@ table fait_trajet
 		summarizeBy: none
 		sourceColumn: jour_ouvre
 
+	measure 'Température du matin (°C)' = AVERAGE(fait_trajet[temp_matin])
+		formatString: 0.0
+
+	measure 'Température min. du matin (°C)' = AVERAGE(fait_trajet[temp_min_matin])
+		formatString: 0.0
+
+	measure 'Précipitations du matin (mm)' = AVERAGE(fait_trajet[precip_matin_mm])
+		formatString: 0.0
+
+	measure 'Jours de gel' = CALCULATE(COUNTROWS(fait_trajet), fait_trajet[temp_min_matin] <= 0)
+		formatString: 0
+
+	column station_meteo
+		dataType: string
+		summarizeBy: none
+		sourceColumn: station_meteo
+
+	column temp_matin
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: temp_matin
+
+	column temp_min_matin
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: temp_min_matin
+
+	column precip_matin_mm
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: precip_matin_mm
+
+	column precip_jour_mm
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: precip_jour_mm
+
+	column rafale_max_matin_ms
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: rafale_max_matin_ms
+
+	column neige_cm_matin
+		dataType: double
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: neige_cm_matin
+
+	column conditions_matin
+		dataType: string
+		summarizeBy: none
+		sourceColumn: conditions_matin
+
 	column objectif_arrivee
 		dataType: string
 		summarizeBy: none

@@ -9,6 +9,10 @@
     {"nom": "Lausanne", "bpuic": "8501120"},
     {"nom": "Bern", "bpuic": "8507000"}
   ],
+  "stations_meteo": {
+    "PUY": ["Lausanne"],
+    "BER": ["Bern"]
+  },
   "lignes": [
     {"operateur": "SBB", "ligne": "IC1"},
     {"operateur": "SBB", "ligne": "IR15"}

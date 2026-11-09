@@ -12,7 +12,7 @@ Projet personnel construit sur Microsoft Fabric (essai), avec les données ouver
 |---|---|---|
 | [Ist-Daten v2](https://data.opentransportdata.swiss/en/dataset/ist-daten-v2) (opentransportdata.swiss) | Tous les passages réalisés en Suisse la veille : horaire prévu, horaire réel, suppression, pour chaque arrêt de chaque course (~2,6 millions de lignes par jour) | Historique : les 35 derniers jours en ligne, les mois précédents dans les [archives](https://archive.opentransportdata.swiss/actual_data_archive.htm) |
 | OJP 2.0 (API) | Départs en temps réel à un arrêt | Flux temps réel (à venir) |
-| MétéoSuisse (données ouvertes) | Observations horaires | Corrélation retard ↔ météo (à venir) |
+| [MétéoSuisse, SwissMetNet](https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/) (données ouvertes) | Observations horaires des stations automatiques (température, précipitations, vent, neige au sol), fichiers `h_historical`, `h_recent`, `h_now` par station | Météo du matin de chaque trajet : gel, neige, pluie, vent |
 
 Les Ist-Daten couvrent les trains, bus, trams et le métro m1 lausannois ; le m2 n'y figure pas.
 
@@ -86,6 +86,16 @@ La capacité d'essai n'exécute qu'un travail Spark à la fois : attendre la fin
 ```
 
 `Charger_Archives` remplace chaque jour déjà présent : le relancer applique le périmètre courant à tout l'historique.
+
+```powershell
+# 3 ter. Météo : stations MétéoSuisse associées aux arrêts (clé stations_meteo de trajets.json), à lancer avant la transformation
+.\ponctualite\fab.ps1 import "Ponctualite.Workspace/Charger_Meteo.Notebook" -i .\ponctualite\fabric\Charger_Meteo.Notebook --format .py -f
+.\ponctualite\fab.ps1 job run "Ponctualite.Workspace/Charger_Meteo.Notebook"
+```
+
+`gold.meteo_jour` résume chaque journée par station (min, max, précipitations, rafales, neige) avec un zoom sur
+05:00–09:59 et une étiquette « conditions du matin » (neige au sol, gel, pluie, vent fort, bruine, sec).
+`Transformer_Passages` l'accroche à chaque trajet suivi par la station de l'arrêt de départ.
 Les fichiers des archives s'appellent `AAAA-MM-JJ_IstDaten.csv` (majuscules) alors que les quotidiens en ligne
 s'appellent `AAAA-MM-JJ_istdaten.csv`.
 
@@ -142,6 +152,8 @@ Trois pages, en Direct Lake sur le modèle gold :
    matrice ligne × jour de la semaine colorée du rouge au vert.
 3. **Alternatives** : pour une gare d'arrivée, la ponctualité de chaque ligne heure par heure, puis chaque horaire avec
    sa fiabilité : de quoi choisir le train à prendre plutôt que celui qu'on a l'habitude de prendre.
+4. **Météo** : ponctualité et retard selon les conditions du matin, et deux nuages de points (température minimale,
+   précipitations) jour par jour.
 
 ## Arborescence
 
@@ -153,6 +165,7 @@ ponctualite/
 ├── fabric/
 │   ├── Charger_Istdaten.Notebook/       bronze, fichiers quotidiens (Spark)
 │   ├── Charger_Archives.Notebook/       bronze, archives mensuelles (Spark)
+│   ├── Charger_Meteo.Notebook/          météo MétéoSuisse : bronze, silver, gold (Spark)
 │   ├── Transformer_Passages.Notebook/   silver et gold (Spark)
 │   └── Collecter_Temps_Reel.Notebook/   relevé OJP → Eventhouse (Python)
 ├── rapport/

@@ -232,7 +232,46 @@ def pages():
         "Chaque horaire à l'arrivée, avec sa fiabilité",
         tri=(colonne("fait_passage", "heure_prevue"), "Ascending"),
     )
-    return [trajets, lignes, alternatives]
+    # Page 4 : la météo du matin explique-t-elle les retards ?
+    meteo = Page("meteo", "Météo")
+    meteo.segment(MARGE, MARGE, 400, 60, colonne("fait_trajet", "trajet"), "Trajet")
+    meteo.segment(440, MARGE, 400, 60, colonne("fait_trajet", "conditions_matin"), "Conditions du matin")
+    meteo.segment(860, MARGE, 400, 60, colonne("dim_date", "jour_ouvre"), "Jour ouvré")
+    meteo.cartes(
+        100,
+        [
+            mesure("fait_trajet", "Ponctualité"),
+            mesure("fait_trajet", "Retard moyen (min)"),
+            mesure("fait_trajet", "Jours de gel"),
+            mesure("fait_trajet", "Température du matin (°C)"),
+            mesure("fait_trajet", "Précipitations du matin (mm)"),
+        ],
+    )
+    meteo.visuel(
+        "clusteredBarChart", MARGE, 220, 500, 230,
+        {"Category": [colonne("fait_trajet", "conditions_matin")], "Y": [mesure("fait_trajet", "Ponctualité")]},
+        "Ponctualité selon les conditions du matin",
+        tri=(mesure("fait_trajet", "Ponctualité"), "Descending"),
+    )
+    meteo.visuel(
+        "clusteredColumnChart", 540, 220, 720, 230,
+        {"Category": [colonne("fait_trajet", "conditions_matin")], "Series": [colonne("fait_trajet", "trajet")],
+         "Y": [mesure("fait_trajet", "Retard moyen (min)")]},
+        "Retard moyen selon les conditions, par trajet",
+    )
+    meteo.visuel(
+        "scatterChart", MARGE, 465, 620, 235,
+        {"Category": [colonne("fait_trajet", "jour")], "X": [mesure("fait_trajet", "Température min. du matin (°C)")],
+         "Y": [mesure("fait_trajet", "Retard moyen (min)")], "Series": [colonne("fait_trajet", "trajet")]},
+        "Chaque jour : température minimale du matin et retard à l'arrivée",
+    )
+    meteo.visuel(
+        "scatterChart", 660, 465, 600, 235,
+        {"Category": [colonne("fait_trajet", "jour")], "X": [mesure("fait_trajet", "Précipitations du matin (mm)")],
+         "Y": [mesure("fait_trajet", "Retard moyen (min)")], "Series": [colonne("fait_trajet", "trajet")]},
+        "Chaque jour : précipitations du matin et retard à l'arrivée",
+    )
+    return [trajets, lignes, alternatives, meteo]
 
 
 def main():
