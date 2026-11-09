@@ -129,19 +129,31 @@
         "kind": "inline",
         "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
       },
-      "text": "departs\n| where releve between (_startTime .. _endTime) and isnotnull(retard_min)\n| where ligne in ('IR90', 'RE33', 'IC1', 'R1', 'R2', '28', '360', '362', 'm1')\n| extend ['Minutes avant le départ'] = 5 * bin(datetime_diff('minute', depart_prevu, releve), 5)\n| where ['Minutes avant le départ'] between (0 .. 60)\n| summarize ['Retard moyen annoncé (min)'] = round(avg(retard_min), 2),\n    ['Part des départs à 3 min ou plus (%)'] = round(100.0 * countif(retard_min >= 3) / count(), 1)\n    by ['Minutes avant le départ']\n| order by ['Minutes avant le départ'] desc",
+      "text": "let fin = now() - 5m;\nlet courses = departs\n| where releve between (_startTime .. _endTime) and depart_prevu < fin and isnotnull(retard_min)\n| extend cle = strcat(course_ref, '|', arret), minutes_avant = datetime_diff('second', depart_prevu, releve) / 60.0\n| where minutes_avant between (0 .. 90);\nlet final = courses | summarize (derniere_minute, retard_final) = arg_min(minutes_avant, retard_min) by cle | where derniere_minute <= 6;\ncourses\n| join kind=inner final on cle\n| extend ['Minutes avant le départ'] = bin(minutes_avant, 10)\n| summarize ['Départs observés'] = dcount(cle), ['Écart moyen avec le retard final (min)'] = round(avg(abs(retard_min - retard_final)), 2),\n    en_retard = dcountif(cle, retard_final >= 3), annonces = dcountif(cle, retard_final >= 3 and retard_min >= 3)\n    by ['Minutes avant le départ']\n| extend ['Retards déjà annoncés (%)'] = round(100.0 * annonces / en_retard, 0)\n| project-away en_retard, annonces\n| order by ['Minutes avant le départ'] asc",
       "usedVariables": [
         "_startTime",
         "_endTime"
       ]
     },
     {
-      "id": "984e170c-da1b-5e52-866a-eb461ab024ce",
+      "id": "8f973264-623e-5232-ac3a-abf7fd327fda",
       "dataSource": {
         "kind": "inline",
         "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
       },
-      "text": "departs\n| where releve between (_startTime .. _endTime) and isnotnull(retard_min)\n| where ligne in ('IR90', 'RE33', 'IC1', 'R1', 'R2', '28', '360', '362', 'm1')\n| extend ['Minutes avant le départ'] = datetime_diff('minute', depart_prevu, releve)\n| where ['Minutes avant le départ'] between (0 .. 60)\n| summarize retard_final = arg_min(['Minutes avant le départ'], retard_min), retard_premier = arg_max(['Minutes avant le départ'], retard_min), releves = count() by course_ref, arret\n| where releves >= 3\n| summarize ['Courses suivies'] = count(), ['Retard connu dès la 1re annonce (%)'] = round(100.0 * countif(abs(retard_final - retard_premier) < 1) / count(), 1)",
+      "text": "let fin = now() - 5m;\ndeparts\n| where releve between (_startTime .. _endTime) and depart_prevu < fin and isnotnull(retard_min)\n| extend cle = strcat(course_ref, '|', arret), minutes_avant = datetime_diff('second', depart_prevu, releve) / 60.0\n| where minutes_avant between (0 .. 90)\n| summarize (derniere_minute, retard_final) = arg_min(minutes_avant, retard_min) by cle\n| where derniere_minute <= 6\n| summarize ['Départs observés jusqu\\'au bout'] = count(), ['dont en retard de 3 min ou plus'] = countif(retard_final >= 3)",
+      "usedVariables": [
+        "_startTime",
+        "_endTime"
+      ]
+    },
+    {
+      "id": "5baa40eb-ed06-52a8-b093-3cb23fd08803",
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "aafba942-b9ad-5ab0-a304-f6ce8734edce"
+      },
+      "text": "let fin = now() - 5m;\ndeparts\n| where releve between (_startTime .. _endTime) and depart_prevu < fin and isnotnull(retard_min)\n| extend minutes_avant = round(datetime_diff('second', depart_prevu, releve) / 60.0, 1)\n| where minutes_avant between (0 .. 90)\n| summarize (min_avant, retard_final) = arg_min(minutes_avant, retard_min), (max_avant, retard_premier) = arg_max(minutes_avant, retard_min), releves = count()\n    by arret, mode, ligne, destination, depart_prevu\n| where min_avant <= 6 and retard_final >= 3\n| project ['Prévu'] = format_datetime(datetime_utc_to_local(depart_prevu, 'Europe/Zurich'), 'HH:mm'), ['Arrêt'] = arret, Ligne = strcat(mode, ' ', ligne), Destination = destination,\n    ['Retard final (min)'] = retard_final, ['Annoncé au 1er relevé (min)'] = retard_premier, ['1er relevé (min avant)'] = max_avant, ['Relevés'] = releves\n| order by ['Retard final (min)'] desc",
       "usedVariables": [
         "_startTime",
         "_endTime"
@@ -471,14 +483,14 @@
     },
     {
       "id": "5e042430-de22-5a20-986c-593c60eb00a1",
-      "title": "À combien de minutes du départ le retard est-il annoncé ?",
-      "visualType": "line",
+      "title": "À combien de minutes du départ le retard est-il déjà annoncé ?",
+      "visualType": "column",
       "pageId": "907d7b8a-ff74-5306-b403-20baafc9bf14",
       "layout": {
         "x": 0,
         "y": 0,
         "width": 16,
-        "height": 10
+        "height": 9
       },
       "queryRef": {
         "kind": "query",
@@ -499,13 +511,12 @@
           "showMultiplePanels": false
         },
         "seriesColors": {},
-        "hideLegend": false,
+        "hideLegend": true,
         "legendLocation": "bottom",
         "xColumnTitle": "",
         "xColumn": "Minutes avant le départ",
         "yColumns": [
-          "Retard moyen annoncé (min)",
-          "Part des départs à 3 min ou plus (%)"
+          "Retards déjà annoncés (%)"
         ],
         "seriesColumns": null,
         "xAxisScale": "linear",
@@ -522,25 +533,58 @@
       }
     },
     {
-      "id": "b596a58b-88e1-5454-92b7-b5e5c0db05b2",
-      "title": "Courses suivies sur la période",
-      "visualType": "card",
+      "id": "dfd7225b-b7a7-5b90-b701-b6611bdbcaf9",
+      "title": "Départs observés jusqu'au bout",
+      "visualType": "multistat",
       "pageId": "907d7b8a-ff74-5306-b403-20baafc9bf14",
       "layout": {
         "x": 16,
         "y": 0,
         "width": 8,
-        "height": 10
+        "height": 9
       },
       "queryRef": {
         "kind": "query",
-        "queryId": "984e170c-da1b-5e52-866a-eb461ab024ce"
+        "queryId": "8f973264-623e-5232-ac3a-abf7fd327fda"
       },
       "visualOptions": {
         "multiStat__textSize": "auto",
         "multiStat__valueColumn": null,
         "colorRulesDisabled": false,
         "colorStyle": "light",
+        "multiStat__displayOrientation": "vertical",
+        "multiStat__labelColumn": null,
+        "multiStat__slot": {
+          "width": 1,
+          "height": 2
+        },
+        "colorRules": []
+      }
+    },
+    {
+      "id": "b7db9c95-d214-5942-9995-5b7fd83c6ea1",
+      "title": "Les retards de la période : quand ont-ils été annoncés ?",
+      "visualType": "table",
+      "pageId": "907d7b8a-ff74-5306-b403-20baafc9bf14",
+      "layout": {
+        "x": 0,
+        "y": 9,
+        "width": 24,
+        "height": 10
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "5baa40eb-ed06-52a8-b093-3cb23fd08803"
+      },
+      "visualOptions": {
+        "table__enableRenderLinks": false,
+        "colorRulesDisabled": false,
+        "colorStyle": "light",
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "crossFilter": [],
+        "drillthrough": [],
+        "table__renderLinks": [],
         "colorRules": []
       }
     }

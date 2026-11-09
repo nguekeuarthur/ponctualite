@@ -71,26 +71,47 @@ REQUETES = {
         "    Motif = iff(annule, 'Course annulée', 'Arrêt non desservi')\n"
         "| order by ['Vu à'] desc"
     ),
+    # Anticipation : pour chaque départ observé jusqu'au bout (dernier relevé à 6 min ou moins du départ),
+    # on compare le retard annoncé X minutes avant avec le retard « final » (dernier relevé).
     "anticipation": (
-        "departs\n"
-        "| where releve between (_startTime .. _endTime) and isnotnull(retard_min)\n"
-        f"| where ligne in ({LIGNES_SUIVIES})\n"
-        "| extend ['Minutes avant le départ'] = 5 * bin(datetime_diff('minute', depart_prevu, releve), 5)\n"
-        "| where ['Minutes avant le départ'] between (0 .. 60)\n"
-        "| summarize ['Retard moyen annoncé (min)'] = round(avg(retard_min), 2),\n"
-        "    ['Part des départs à 3 min ou plus (%)'] = round(100.0 * countif(retard_min >= 3) / count(), 1)\n"
+        "let fin = now() - 5m;\n"
+        "let courses = departs\n"
+        "| where releve between (_startTime .. _endTime) and depart_prevu < fin and isnotnull(retard_min)\n"
+        "| extend cle = strcat(course_ref, '|', arret), minutes_avant = datetime_diff('second', depart_prevu, releve) / 60.0\n"
+        "| where minutes_avant between (0 .. 90);\n"
+        "let final = courses | summarize (derniere_minute, retard_final) = arg_min(minutes_avant, retard_min) by cle | where derniere_minute <= 6;\n"
+        "courses\n"
+        "| join kind=inner final on cle\n"
+        "| extend ['Minutes avant le départ'] = bin(minutes_avant, 10)\n"
+        "| summarize ['Départs observés'] = dcount(cle), ['Écart moyen avec le retard final (min)'] = round(avg(abs(retard_min - retard_final)), 2),\n"
+        "    en_retard = dcountif(cle, retard_final >= 3), annonces = dcountif(cle, retard_final >= 3 and retard_min >= 3)\n"
         "    by ['Minutes avant le départ']\n"
-        "| order by ['Minutes avant le départ'] desc"
+        "| extend ['Retards déjà annoncés (%)'] = round(100.0 * annonces / en_retard, 0)\n"
+        "| project-away en_retard, annonces\n"
+        "| order by ['Minutes avant le départ'] asc"
     ),
-    "evolution_par_course": (
+    "departs_observes": (
+        "let fin = now() - 5m;\n"
         "departs\n"
-        "| where releve between (_startTime .. _endTime) and isnotnull(retard_min)\n"
-        f"| where ligne in ({LIGNES_SUIVIES})\n"
-        "| extend ['Minutes avant le départ'] = datetime_diff('minute', depart_prevu, releve)\n"
-        "| where ['Minutes avant le départ'] between (0 .. 60)\n"
-        "| summarize retard_final = arg_min(['Minutes avant le départ'], retard_min), retard_premier = arg_max(['Minutes avant le départ'], retard_min), releves = count() by course_ref, arret\n"
-        "| where releves >= 3\n"
-        "| summarize ['Courses suivies'] = count(), ['Retard connu dès la 1re annonce (%)'] = round(100.0 * countif(abs(retard_final - retard_premier) < 1) / count(), 1)"
+        "| where releve between (_startTime .. _endTime) and depart_prevu < fin and isnotnull(retard_min)\n"
+        "| extend cle = strcat(course_ref, '|', arret), minutes_avant = datetime_diff('second', depart_prevu, releve) / 60.0\n"
+        "| where minutes_avant between (0 .. 90)\n"
+        "| summarize (derniere_minute, retard_final) = arg_min(minutes_avant, retard_min) by cle\n"
+        "| where derniere_minute <= 6\n"
+        "| summarize ['Départs observés jusqu\\'au bout'] = count(), ['dont en retard de 3 min ou plus'] = countif(retard_final >= 3)"
+    ),
+    "retards_annonces": (
+        "let fin = now() - 5m;\n"
+        "departs\n"
+        "| where releve between (_startTime .. _endTime) and depart_prevu < fin and isnotnull(retard_min)\n"
+        "| extend minutes_avant = round(datetime_diff('second', depart_prevu, releve) / 60.0, 1)\n"
+        "| where minutes_avant between (0 .. 90)\n"
+        "| summarize (min_avant, retard_final) = arg_min(minutes_avant, retard_min), (max_avant, retard_premier) = arg_max(minutes_avant, retard_min), releves = count()\n"
+        "    by arret, mode, ligne, destination, depart_prevu\n"
+        "| where min_avant <= 6 and retard_final >= 3\n"
+        f"| project ['Prévu'] = {HEURE.format('depart_prevu')}, ['Arrêt'] = arret, Ligne = strcat(mode, ' ', ligne), Destination = destination,\n"
+        "    ['Retard final (min)'] = retard_final, ['Annoncé au 1er relevé (min)'] = retard_premier, ['1er relevé (min avant)'] = max_avant, ['Relevés'] = releves\n"
+        "| order by ['Retard final (min)'] desc"
     ),
 }
 
@@ -157,10 +178,17 @@ def definition():
             "table__enableRenderLinks": False, "colorRulesDisabled": False, "colorStyle": "light", "crossFilterDisabled": False,
             "drillthroughDisabled": False, "crossFilter": [], "drillthrough": [], "table__renderLinks": [], "colorRules": [],
         }),
-        tuile("anticipation", "À combien de minutes du départ le retard est-il annoncé ?", "line", PAGE_ANTICIPATION, 0, 0, 16, 10,
-              graphique("Minutes avant le départ", ["Retard moyen annoncé (min)", "Part des départs à 3 min ou plus (%)"])),
-        tuile("evolution_par_course", "Courses suivies sur la période", "card", PAGE_ANTICIPATION, 16, 0, 8, 10,
-              {**CARTE, "multiStat__valueColumn": None}),
+        tuile("anticipation", "À combien de minutes du départ le retard est-il déjà annoncé ?", "column", PAGE_ANTICIPATION, 0, 0, 16, 9,
+              graphique("Minutes avant le départ", ["Retards déjà annoncés (%)"], None, False)),
+        tuile("departs_observes", "Départs observés jusqu'au bout", "multistat", PAGE_ANTICIPATION, 16, 0, 8, 9, {
+            "multiStat__textSize": "auto", "multiStat__valueColumn": None, "colorRulesDisabled": False, "colorStyle": "light",
+            "multiStat__displayOrientation": "vertical", "multiStat__labelColumn": None, "multiStat__slot": {"width": 1, "height": 2},
+            "colorRules": [],
+        }),
+        tuile("retards_annonces", "Les retards de la période : quand ont-ils été annoncés ?", "table", PAGE_ANTICIPATION, 0, 9, 24, 10, {
+            "table__enableRenderLinks": False, "colorRulesDisabled": False, "colorStyle": "light", "crossFilterDisabled": False,
+            "drillthroughDisabled": False, "crossFilter": [], "drillthrough": [], "table__renderLinks": [], "colorRules": [],
+        }),
     ]
     # Même structure que les tableaux de bord publiés par Microsoft dans fabric-toolbox (schéma 60) :
     # pas de clé « title » (le nom vient de l'élément Fabric), source de type kusto-trident.
