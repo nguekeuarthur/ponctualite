@@ -161,6 +161,28 @@ Trois pages, en Direct Lake sur le modèle gold :
    sa fiabilité : de quoi choisir le train à prendre plutôt que celui qu'on a l'habitude de prendre.
 4. **Météo** : ponctualité et retard selon les conditions du matin, et deux nuages de points (température minimale,
    précipitations) jour par jour.
+5. **Demain** : le risque de retard de chaque trajet pour le prochain jour ouvré, avec la météo prévue, l'importance des
+   variables et l'évaluation du modèle.
+
+## La prédiction
+
+`Predire_Retards` apprend sur les trajets suivis (jours ouvrés) un modèle de gradient boosting peu profond, calibré
+(isotonique), à partir du trajet, du jour de la semaine, du mois, de la météo du matin et de la « forme » récente du
+trajet (part de retards et retard moyen des 10 derniers jours, suppression dans les 5 derniers). Il est évalué
+honnêtement : apprentissage sur le passé, test sur les 60 derniers jours observés, comparé à une référence naïve
+(taux de retard du trajet par jour de semaine). Puis il prédit le prochain jour ouvré avec la prévision météo
+[Open-Meteo](https://open-meteo.com) aux coordonnées de la station associée au départ, et conserve chaque prédiction
+dans `gold.prediction` pour pouvoir la juger après coup.
+
+Premier résultat (09.11.2026, 1'690 jours d'apprentissage, 406 de test) : AUC 0,64 contre 0,60 pour la référence.
+Le signal principal est la forme récente du trajet, puis le trajet lui-même, le jour de la semaine et la pluie du matin ;
+la température et le vent n'apportent rien. Autrement dit : un train qui traîne depuis dix jours continuera
+probablement, et la pluie n'arrange rien ; le reste est du bruit à ce stade.
+
+```powershell
+.\ponctualite\fab.ps1 import "Ponctualite.Workspace/Predire_Retards.Notebook" -i .\ponctualite\fabric\Predire_Retards.Notebook --format .py -f
+.\ponctualite\fab.ps1 job run "Ponctualite.Workspace/Predire_Retards.Notebook"
+```
 
 ## Arborescence
 
@@ -173,6 +195,7 @@ ponctualite/
 │   ├── Charger_Istdaten.Notebook/       bronze, fichiers quotidiens (Spark)
 │   ├── Charger_Archives.Notebook/       bronze, archives mensuelles (Spark)
 │   ├── Charger_Meteo.Notebook/          météo MétéoSuisse : bronze, silver, gold (Spark)
+│   ├── Predire_Retards.Notebook/        modèle de risque de retard, évaluation, prévision de demain (Spark + scikit-learn)
 │   ├── Transformer_Passages.Notebook/   silver et gold (Spark)
 │   └── Collecter_Temps_Reel.Notebook/   relevé OJP → Eventhouse (Python)
 ├── rapport/
