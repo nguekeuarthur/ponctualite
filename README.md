@@ -80,6 +80,16 @@ La CLI Fabric passe par `fab.ps1`, qui utilise un profil Azure isolé (tenant pe
 La capacité d'essai n'exécute qu'un travail Spark à la fois : attendre la fin du chargement avant de transformer.
 
 ```powershell
+# 3 bis. Profondeur historique : les archives mensuelles (1,4 Go par mois, ~25 s par jour de données)
+.\ponctualite\fab.ps1 import "Ponctualite.Workspace/Charger_Archives.Notebook" -i .\ponctualite\fabric\Charger_Archives.Notebook --format .py -f
+.\ponctualite\fab.ps1 job start "Ponctualite.Workspace/Charger_Archives.Notebook"
+```
+
+`Charger_Archives` remplace chaque jour déjà présent : le relancer applique le périmètre courant à tout l'historique.
+Les fichiers des archives s'appellent `AAAA-MM-JJ_IstDaten.csv` (majuscules) alors que les quotidiens en ligne
+s'appellent `AAAA-MM-JJ_istdaten.csv`.
+
+```powershell
 # 4. Temps réel : tester la clé OJP, envoyer la clé dans le lakehouse, déployer et planifier le collecteur
 python -I .\ponctualite\scripts\tester_ojp.py 8501118 "Renens VD"
 .\ponctualite\fab.ps1 cp .\ponctualite\.env "Ponctualite.Workspace/Ponctualite.Lakehouse/Files/config/ojp.env" -f
@@ -141,7 +151,8 @@ ponctualite/
 │   ├── trajets.exemple.json      format du périmètre (publié)
 │   └── trajets.json              mon périmètre (jamais publié)
 ├── fabric/
-│   ├── Charger_Istdaten.Notebook/       bronze (Spark)
+│   ├── Charger_Istdaten.Notebook/       bronze, fichiers quotidiens (Spark)
+│   ├── Charger_Archives.Notebook/       bronze, archives mensuelles (Spark)
 │   ├── Transformer_Passages.Notebook/   silver et gold (Spark)
 │   └── Collecter_Temps_Reel.Notebook/   relevé OJP → Eventhouse (Python)
 ├── rapport/
