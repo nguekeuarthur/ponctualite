@@ -1,15 +1,15 @@
 table prediction
 
-	measure 'Risque de retard' = AVERAGE(prediction[probabilite_retard])
+	measure 'Risque de retard' = AVERAGE('prediction'[probabilite_retard])
 		formatString: 0 %
 
-	measure 'Risque maximal' = MAX(prediction[probabilite_retard])
+	measure 'Risque maximal' = MAX('prediction'[probabilite_retard])
 		formatString: 0 %
 
-	measure 'Trajets prédits' = COUNTROWS(prediction)
+	measure 'Trajets prédits' = COUNTROWS('prediction')
 		formatString: 0
 
-	measure 'Taux historique du trajet' = AVERAGE(prediction[taux_historique])
+	measure 'Taux historique du trajet' = AVERAGE('prediction'[taux_historique])
 		formatString: 0 %
 
 	column jour_cible
