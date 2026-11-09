@@ -1,0 +1,7 @@
+/// Point de terminaison SQL du lakehouse Ponctualite (Direct Lake)
+expression DatabaseQuery =
+		let
+		    database = Sql.Database("jk3yb5i4w36u5henrlt6at5lpe-akqaczlzjtnevkq6hns2lpy7tm.datawarehouse.fabric.microsoft.com", "5691c55b-fa8f-4be5-bfb4-e07b409bf2ac")
+		in
+		    database
+

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "trajets_08",
+  "position": {
+    "x": 1060,
+    "y": 100,
+    "z": 8,
+    "width": 198,
+    "height": 100,
+    "tabOrder": 8
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "Minutes perdues"
+                }
+              },
+              "queryRef": "fait_trajet.Minutes perdues",
+              "nativeQueryRef": "Minutes perdues"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

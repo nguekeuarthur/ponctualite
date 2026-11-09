@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "lignes_06",
+  "position": {
+    "x": 770,
+    "y": 100,
+    "z": 6,
+    "width": 240,
+    "height": 100,
+    "tabOrder": 6
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_passage"
+                    }
+                  },
+                  "Property": "Retard P90 (min)"
+                }
+              },
+              "queryRef": "fait_passage.Retard P90 (min)",
+              "nativeQueryRef": "Retard P90 (min)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

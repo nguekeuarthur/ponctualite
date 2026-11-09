@@ -1,0 +1,162 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "alternatives_04",
+  "position": {
+    "x": 20,
+    "y": 415,
+    "z": 4,
+    "width": 1240,
+    "height": 285,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_ligne"
+                    }
+                  },
+                  "Property": "libelle"
+                }
+              },
+              "queryRef": "dim_ligne.libelle",
+              "nativeQueryRef": "libelle"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_passage"
+                    }
+                  },
+                  "Property": "heure_prevue"
+                }
+              },
+              "queryRef": "fait_passage.heure_prevue",
+              "nativeQueryRef": "heure_prevue"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_passage"
+                    }
+                  },
+                  "Property": "Passages"
+                }
+              },
+              "queryRef": "fait_passage.Passages",
+              "nativeQueryRef": "Passages"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_passage"
+                    }
+                  },
+                  "Property": "Ponctualité des passages"
+                }
+              },
+              "queryRef": "fait_passage.Ponctualité des passages",
+              "nativeQueryRef": "Ponctualité des passages"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_passage"
+                    }
+                  },
+                  "Property": "Retard moyen des passages (min)"
+                }
+              },
+              "queryRef": "fait_passage.Retard moyen des passages (min)",
+              "nativeQueryRef": "Retard moyen des passages (min)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_passage"
+                    }
+                  },
+                  "Property": "Retard P90 (min)"
+                }
+              },
+              "queryRef": "fait_passage.Retard P90 (min)",
+              "nativeQueryRef": "Retard P90 (min)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_passage"
+                    }
+                  },
+                  "Property": "Passages supprimés"
+                }
+              },
+              "queryRef": "fait_passage.Passages supprimés",
+              "nativeQueryRef": "Passages supprimés"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "fait_passage"
+                  }
+                },
+                "Property": "heure_prevue"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Chaque horaire à l'arrivée, avec sa fiabilité'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

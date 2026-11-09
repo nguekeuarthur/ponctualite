@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "Collecter_Temps_Reel",
+    "description": "Relève les prochains départs en temps réel (OJP 2.0) aux arrêts suivis et les ajoute à la table departs de l'Eventhouse Ponctualite_TR"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "00000000-0000-0000-0000-000000000000"
+  }
+}

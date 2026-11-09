@@ -1,0 +1,182 @@
+table fait_passage
+
+	measure 'Passages' = COUNTROWS(fait_passage)
+		formatString: #,0
+
+	measure 'Passages évalués' = CALCULATE(COUNTROWS(fait_passage), NOT ISBLANK(fait_passage[ponctuel]))
+		formatString: #,0
+
+	measure 'Passages ponctuels' = CALCULATE(COUNTROWS(fait_passage), fait_passage[ponctuel] = TRUE())
+		formatString: #,0
+
+	measure 'Ponctualité des passages' = DIVIDE([Passages ponctuels], [Passages évalués])
+		formatString: 0 %
+
+	measure 'Retard moyen des passages (min)' = AVERAGE(fait_passage[retard_arrivee_min])
+		formatString: 0.0
+
+	measure 'Retard P90 (min)' = PERCENTILEX.INC(FILTER(fait_passage, NOT ISBLANK(fait_passage[retard_arrivee_min])), fait_passage[retard_arrivee_min], 0.9)
+		formatString: 0.0
+
+	measure 'Passages supprimés' = CALCULATE(COUNTROWS(fait_passage), fait_passage[supprime] = TRUE())
+		formatString: #,0
+
+	measure 'Passages à plus de 3 min' = CALCULATE(COUNTROWS(fait_passage), fait_passage[retard_arrivee_min] >= 3)
+		formatString: #,0
+
+	column jour
+		dataType: dateTime
+		formatString: dd.MM.yyyy
+		summarizeBy: none
+		sourceColumn: jour
+
+	column course_id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: course_id
+
+	column operateur
+		dataType: string
+		summarizeBy: none
+		sourceColumn: operateur
+
+	column operateur_nom
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: operateur_nom
+
+	column produit
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: produit
+
+	column type_transport
+		dataType: string
+		summarizeBy: none
+		sourceColumn: type_transport
+
+	column ligne
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ligne
+
+	column arret
+		dataType: string
+		summarizeBy: none
+		sourceColumn: arret
+
+	column bpuic
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: bpuic
+
+	column sloid
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: sloid
+
+	column arrivee_prevue
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm
+		summarizeBy: none
+		sourceColumn: arrivee_prevue
+
+	column arrivee_reelle
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm:ss
+		summarizeBy: none
+		sourceColumn: arrivee_reelle
+
+	column arrivee_statut
+		dataType: string
+		summarizeBy: none
+		sourceColumn: arrivee_statut
+
+	column depart_prevu
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm
+		summarizeBy: none
+		sourceColumn: depart_prevu
+
+	column depart_reel
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm:ss
+		summarizeBy: none
+		sourceColumn: depart_reel
+
+	column depart_statut
+		dataType: string
+		summarizeBy: none
+		sourceColumn: depart_statut
+
+	column supprime
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: supprime
+
+	column supplementaire
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: supplementaire
+
+	column passage_sans_arret
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: passage_sans_arret
+
+	column retard_arrivee_min
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: retard_arrivee_min
+
+	column retard_depart_min
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: retard_depart_min
+
+	column retard_fiable
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: retard_fiable
+
+	column ponctuel
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: ponctuel
+
+	column ordre_arret
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: ordre_arret
+
+	column ligne_cle
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: ligne_cle
+
+	column heure_prevue
+		dataType: string
+		summarizeBy: none
+		sourceColumn: heure_prevue
+
+	column heure_du_jour
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: heure_du_jour
+
+	partition fait_passage = entity
+		mode: directLake
+		source
+			entityName: fait_passage
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

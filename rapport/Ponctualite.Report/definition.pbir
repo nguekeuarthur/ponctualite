@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
+  "version": "4.0",
+  "datasetReference": {
+    "byConnection": {
+      "connectionString": "Data Source=\"powerbi://api.powerbi.com/v1.0/myorg/Ponctualite\";initial catalog=Ponctualite;integrated security=ClaimsToken;semanticmodelid=b7104e59-d4c1-4e16-ac35-81a3b14fb4a2"
+    }
+  }
+}

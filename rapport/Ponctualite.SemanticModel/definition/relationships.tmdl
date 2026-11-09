@@ -1,0 +1,20 @@
+relationship trajet_date
+	fromColumn: fait_trajet.jour
+	toColumn: dim_date.jour
+
+relationship trajet_ligne
+	fromColumn: fait_trajet.ligne_cle
+	toColumn: dim_ligne.ligne_cle
+
+relationship passage_date
+	fromColumn: fait_passage.jour
+	toColumn: dim_date.jour
+
+relationship passage_ligne
+	fromColumn: fait_passage.ligne_cle
+	toColumn: dim_ligne.ligne_cle
+
+relationship passage_arret
+	fromColumn: fait_passage.arret
+	toColumn: dim_arret.arret
+

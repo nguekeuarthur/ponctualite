@@ -1,0 +1,34 @@
+table dim_arret
+
+	column arret
+		dataType: string
+		isKey
+		summarizeBy: none
+		sourceColumn: arret
+
+	column bpuic
+		dataType: string
+		summarizeBy: none
+		sourceColumn: bpuic
+
+	column nb_lignes
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: sum
+		sourceColumn: nb_lignes
+
+	column nb_passages
+		dataType: int64
+		isHidden
+		formatString: #,0
+		summarizeBy: sum
+		sourceColumn: nb_passages
+
+	partition dim_arret = entity
+		mode: directLake
+		source
+			entityName: dim_arret
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

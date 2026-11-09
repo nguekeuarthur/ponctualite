@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "trajets_04",
+  "position": {
+    "x": 228,
+    "y": 100,
+    "z": 4,
+    "width": 198,
+    "height": 100,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "Retard moyen (min)"
+                }
+              },
+              "queryRef": "fait_trajet.Retard moyen (min)",
+              "nativeQueryRef": "Retard moyen (min)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

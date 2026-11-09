@@ -1,0 +1,79 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "lignes_09",
+  "position": {
+    "x": 540,
+    "y": 220,
+    "z": 9,
+    "width": 720,
+    "height": 230,
+    "tabOrder": 9
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_passage"
+                    }
+                  },
+                  "Property": "heure_du_jour"
+                }
+              },
+              "queryRef": "fait_passage.heure_du_jour",
+              "nativeQueryRef": "heure_du_jour",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_passage"
+                    }
+                  },
+                  "Property": "Retard moyen des passages (min)"
+                }
+              },
+              "queryRef": "fait_passage.Retard moyen des passages (min)",
+              "nativeQueryRef": "Retard moyen des passages (min)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Retard moyen selon l'heure de la journée'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

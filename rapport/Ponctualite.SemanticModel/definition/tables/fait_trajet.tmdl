@@ -1,0 +1,166 @@
+table fait_trajet
+
+	measure 'Trajets' = COUNTROWS(fait_trajet)
+		formatString: 0
+
+	measure 'Trajets évalués' = CALCULATE(COUNTROWS(fait_trajet), NOT ISBLANK(fait_trajet[ponctuel]))
+		formatString: 0
+
+	measure 'Trajets ponctuels' = CALCULATE(COUNTROWS(fait_trajet), fait_trajet[ponctuel] = TRUE())
+		formatString: 0
+
+	measure 'Ponctualité' = DIVIDE([Trajets ponctuels], [Trajets évalués])
+		formatString: 0 %
+
+	measure 'Retard moyen (min)' = AVERAGE(fait_trajet[retard_arrivee_min])
+		formatString: 0.0
+
+	measure 'Retard max (min)' = MAX(fait_trajet[retard_arrivee_min])
+		formatString: 0.0
+
+	measure 'Jours à plus de 3 min' = CALCULATE(COUNTROWS(fait_trajet), fait_trajet[retard_arrivee_min] >= 3)
+		formatString: 0
+
+	measure 'Suppressions' = CALCULATE(COUNTROWS(fait_trajet), fait_trajet[supprime] = TRUE())
+		formatString: 0
+
+	measure 'Minutes perdues' = SUMX(fait_trajet, MAX(fait_trajet[retard_arrivee_min], 0))
+		formatString: #,0
+
+	column jour
+		dataType: dateTime
+		formatString: dd.MM.yyyy
+		summarizeBy: none
+		sourceColumn: jour
+
+	column course_id
+		dataType: string
+		summarizeBy: none
+		sourceColumn: course_id
+
+	column operateur
+		dataType: string
+		summarizeBy: none
+		sourceColumn: operateur
+
+	column ligne
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ligne
+
+	column arret_depart
+		dataType: string
+		summarizeBy: none
+		sourceColumn: arret_depart
+
+	column depart_prevu
+		dataType: dateTime
+		formatString: HH:mm
+		summarizeBy: none
+		sourceColumn: depart_prevu
+
+	column depart_reel
+		dataType: dateTime
+		formatString: HH:mm:ss
+		summarizeBy: none
+		sourceColumn: depart_reel
+
+	column depart_statut
+		dataType: string
+		summarizeBy: none
+		sourceColumn: depart_statut
+
+	column retard_depart_min
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: retard_depart_min
+
+	column supprime_au_depart
+		dataType: boolean
+		isHidden
+		summarizeBy: none
+		sourceColumn: supprime_au_depart
+
+	column arret_arrivee
+		dataType: string
+		summarizeBy: none
+		sourceColumn: arret_arrivee
+
+	column arrivee_prevue
+		dataType: dateTime
+		formatString: HH:mm
+		summarizeBy: none
+		sourceColumn: arrivee_prevue
+
+	column arrivee_reelle
+		dataType: dateTime
+		formatString: HH:mm:ss
+		summarizeBy: none
+		sourceColumn: arrivee_reelle
+
+	column arrivee_statut
+		dataType: string
+		summarizeBy: none
+		sourceColumn: arrivee_statut
+
+	column retard_arrivee_min
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: retard_arrivee_min
+
+	column retard_fiable
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: retard_fiable
+
+	column ponctuel
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: ponctuel
+
+	column supprime_a_l_arrivee
+		dataType: boolean
+		isHidden
+		summarizeBy: none
+		sourceColumn: supprime_a_l_arrivee
+
+	column trajet
+		dataType: string
+		summarizeBy: none
+		sourceColumn: trajet
+
+	column jours_prevus
+		dataType: string
+		summarizeBy: none
+		sourceColumn: jours_prevus
+
+	column ligne_cle
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: ligne_cle
+
+	column supprime
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: supprime
+
+	column nom_jour
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nom_jour
+
+	column jour_ouvre
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: jour_ouvre
+
+	partition fait_trajet = entity
+		mode: directLake
+		source
+			entityName: fait_trajet
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

@@ -1,0 +1,162 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "trajets_12",
+  "position": {
+    "x": 540,
+    "y": 465,
+    "z": 12,
+    "width": 720,
+    "height": 235,
+    "tabOrder": 12
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "jour"
+                }
+              },
+              "queryRef": "fait_trajet.jour",
+              "nativeQueryRef": "jour"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "nom_jour"
+                }
+              },
+              "queryRef": "fait_trajet.nom_jour",
+              "nativeQueryRef": "nom_jour"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "trajet"
+                }
+              },
+              "queryRef": "fait_trajet.trajet",
+              "nativeQueryRef": "trajet"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "arrivee_prevue"
+                }
+              },
+              "queryRef": "fait_trajet.arrivee_prevue",
+              "nativeQueryRef": "arrivee_prevue"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "arrivee_reelle"
+                }
+              },
+              "queryRef": "fait_trajet.arrivee_reelle",
+              "nativeQueryRef": "arrivee_reelle"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "Retard moyen (min)"
+                }
+              },
+              "queryRef": "fait_trajet.Retard moyen (min)",
+              "nativeQueryRef": "Retard moyen (min)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_trajet"
+                    }
+                  },
+                  "Property": "Suppressions"
+                }
+              },
+              "queryRef": "fait_trajet.Suppressions",
+              "nativeQueryRef": "Suppressions"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "fait_trajet"
+                  }
+                },
+                "Property": "Retard moyen (min)"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Les pires jours'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,53 @@
+table dim_ligne
+
+	column ligne_cle
+		dataType: string
+		isKey
+		isHidden
+		summarizeBy: none
+		sourceColumn: ligne_cle
+
+	column operateur
+		dataType: string
+		summarizeBy: none
+		sourceColumn: operateur
+
+	column operateur_nom
+		dataType: string
+		summarizeBy: none
+		sourceColumn: operateur_nom
+
+	column ligne
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ligne
+
+	column type_transport
+		dataType: string
+		summarizeBy: none
+		sourceColumn: type_transport
+
+	column produit
+		dataType: string
+		summarizeBy: none
+		sourceColumn: produit
+
+	column libelle
+		dataType: string
+		summarizeBy: none
+		sourceColumn: libelle
+
+	column nb_passages
+		dataType: int64
+		isHidden
+		formatString: #,0
+		summarizeBy: sum
+		sourceColumn: nb_passages
+
+	partition dim_ligne = entity
+		mode: directLake
+		source
+			entityName: dim_ligne
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

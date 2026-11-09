@@ -1,0 +1,60 @@
+table dim_date
+	dataCategory: Time
+
+	column jour
+		dataType: dateTime
+		isKey
+		formatString: dd.MM.yyyy
+		summarizeBy: none
+		sourceColumn: jour
+
+	column annee
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: annee
+
+	column mois
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: mois
+
+	column nom_mois
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nom_mois
+		sortByColumn: mois
+
+	column semaine_iso
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: semaine_iso
+
+	column jour_semaine
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: jour_semaine
+
+	column nom_jour
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nom_jour
+		sortByColumn: jour_semaine
+
+	column jour_ouvre
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: jour_ouvre
+
+	partition dim_date = entity
+		mode: directLake
+		source
+			entityName: dim_date
+			schemaName: gold
+			expressionSource: DatabaseQuery
+
