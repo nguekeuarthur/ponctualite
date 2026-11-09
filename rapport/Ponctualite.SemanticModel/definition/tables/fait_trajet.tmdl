@@ -27,6 +27,9 @@ table fait_trajet
 	measure 'Minutes perdues' = SUMX(fait_trajet, MAX(fait_trajet[retard_arrivee_min], 0))
 		formatString: #,0
 
+	measure 'Arrivées avant l''objectif' = DIVIDE(CALCULATE(COUNTROWS(fait_trajet), fait_trajet[arrive_avant_objectif] = TRUE()), CALCULATE(COUNTROWS(fait_trajet), NOT ISBLANK(fait_trajet[arrive_avant_objectif])))
+		formatString: 0 %
+
 	column jour
 		dataType: dateTime
 		formatString: dd.MM.yyyy
@@ -156,6 +159,16 @@ table fait_trajet
 		dataType: boolean
 		summarizeBy: none
 		sourceColumn: jour_ouvre
+
+	column objectif_arrivee
+		dataType: string
+		summarizeBy: none
+		sourceColumn: objectif_arrivee
+
+	column arrive_avant_objectif
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: arrive_avant_objectif
 
 	partition fait_trajet = entity
 		mode: directLake

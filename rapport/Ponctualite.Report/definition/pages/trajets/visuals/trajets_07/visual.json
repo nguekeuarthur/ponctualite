@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
   "name": "trajets_07",
   "position": {
-    "x": 852,
+    "x": 732,
     "y": 100,
     "z": 7,
-    "width": 198,
+    "width": 168,
     "height": 100,
     "tabOrder": 7
   },
@@ -23,11 +23,11 @@
                       "Entity": "fait_trajet"
                     }
                   },
-                  "Property": "Suppressions"
+                  "Property": "Jours à plus de 3 min"
                 }
               },
-              "queryRef": "fait_trajet.Suppressions",
-              "nativeQueryRef": "Suppressions"
+              "queryRef": "fait_trajet.Jours à plus de 3 min",
+              "nativeQueryRef": "Jours à plus de 3 min"
             }
           ]
         }

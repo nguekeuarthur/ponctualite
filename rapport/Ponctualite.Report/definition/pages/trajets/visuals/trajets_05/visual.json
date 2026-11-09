@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
   "name": "trajets_05",
   "position": {
-    "x": 436,
+    "x": 376,
     "y": 100,
     "z": 5,
-    "width": 198,
+    "width": 168,
     "height": 100,
     "tabOrder": 5
   },
@@ -23,11 +23,11 @@
                       "Entity": "fait_trajet"
                     }
                   },
-                  "Property": "Retard max (min)"
+                  "Property": "Retard moyen (min)"
                 }
               },
-              "queryRef": "fait_trajet.Retard max (min)",
-              "nativeQueryRef": "Retard max (min)"
+              "queryRef": "fait_trajet.Retard moyen (min)",
+              "nativeQueryRef": "Retard moyen (min)"
             }
           ]
         }

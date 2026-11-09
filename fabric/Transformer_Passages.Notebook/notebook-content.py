@@ -197,11 +197,19 @@ for t in CONFIG["trajets"]:
                 "arrivee_statut", "retard_arrivee_min", "retard_fiable", "ponctuel",
                 F.col("supprime").alias("supprime_a_l_arrivee"))
     )
+    # Objectif d'arrivée (ex. « 09:00 » = début du travail) : le trajet est réussi si l'arrivée réelle le précède
+    objectif = t.get("objectif_arrivee")
     morceaux.append(
         depart.join(arrivee, ["jour", "course_id"], "left")
         .withColumn("trajet", F.lit(t["nom"]))
         .withColumn("jours_prevus", F.lit(t["jours"]))
         .withColumn("ligne_cle", F.concat_ws("|", "operateur", "ligne"))
+        .withColumn("objectif_arrivee", F.lit(objectif))
+        .withColumn(
+            "arrive_avant_objectif",
+            F.when(F.lit(objectif).isNull() | F.col("arrivee_reelle").isNull(), F.lit(None).cast("boolean"))
+            .otherwise(F.date_format("arrivee_reelle", "HH:mm:ss") < F.lit(f"{objectif}:00")),
+        )
     )
 
 fait_trajet = morceaux[0]

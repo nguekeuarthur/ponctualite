@@ -139,6 +139,7 @@ def pages():
         100,
         [
             mesure("fait_trajet", "Ponctualité"),
+            mesure("fait_trajet", "Arrivées avant l'objectif"),
             mesure("fait_trajet", "Retard moyen (min)"),
             mesure("fait_trajet", "Retard max (min)"),
             mesure("fait_trajet", "Jours à plus de 3 min"),

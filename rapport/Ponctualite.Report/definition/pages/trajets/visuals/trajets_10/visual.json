@@ -2,18 +2,37 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
   "name": "trajets_10",
   "position": {
-    "x": 860,
+    "x": 20,
     "y": 220,
     "z": 10,
-    "width": 400,
+    "width": 820,
     "height": 230,
     "tabOrder": 10
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "clusteredColumnChart",
     "query": {
       "queryState": {
         "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_date"
+                    }
+                  },
+                  "Property": "jour"
+                }
+              },
+              "queryRef": "dim_date.jour",
+              "nativeQueryRef": "jour",
+              "active": true
+            }
+          ]
+        },
+        "Series": {
           "projections": [
             {
               "field": {
@@ -27,8 +46,7 @@
                 }
               },
               "queryRef": "fait_trajet.trajet",
-              "nativeQueryRef": "trajet",
-              "active": true
+              "nativeQueryRef": "trajet"
             }
           ]
         },
@@ -42,11 +60,11 @@
                       "Entity": "fait_trajet"
                     }
                   },
-                  "Property": "Ponctualité"
+                  "Property": "Retard moyen (min)"
                 }
               },
-              "queryRef": "fait_trajet.Ponctualité",
-              "nativeQueryRef": "Ponctualité"
+              "queryRef": "fait_trajet.Retard moyen (min)",
+              "nativeQueryRef": "Retard moyen (min)"
             }
           ]
         }
@@ -67,7 +85,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Ponctualité par trajet'"
+                  "Value": "'Retard à l'arrivée, jour par jour'"
                 }
               }
             }

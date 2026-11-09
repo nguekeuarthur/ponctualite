@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
   "name": "trajets_08",
   "position": {
-    "x": 1060,
+    "x": 910,
     "y": 100,
     "z": 8,
-    "width": 198,
+    "width": 168,
     "height": 100,
     "tabOrder": 8
   },
@@ -23,11 +23,11 @@
                       "Entity": "fait_trajet"
                     }
                   },
-                  "Property": "Minutes perdues"
+                  "Property": "Suppressions"
                 }
               },
-              "queryRef": "fait_trajet.Minutes perdues",
-              "nativeQueryRef": "Minutes perdues"
+              "queryRef": "fait_trajet.Suppressions",
+              "nativeQueryRef": "Suppressions"
             }
           ]
         }

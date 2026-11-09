@@ -2,37 +2,18 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
   "name": "trajets_11",
   "position": {
-    "x": 20,
-    "y": 465,
+    "x": 860,
+    "y": 220,
     "z": 11,
-    "width": 500,
-    "height": 235,
+    "width": 400,
+    "height": 230,
     "tabOrder": 11
   },
   "visual": {
-    "visualType": "clusteredColumnChart",
+    "visualType": "clusteredBarChart",
     "query": {
       "queryState": {
         "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "dim_date"
-                    }
-                  },
-                  "Property": "nom_jour"
-                }
-              },
-              "queryRef": "dim_date.nom_jour",
-              "nativeQueryRef": "nom_jour",
-              "active": true
-            }
-          ]
-        },
-        "Series": {
           "projections": [
             {
               "field": {
@@ -46,7 +27,8 @@
                 }
               },
               "queryRef": "fait_trajet.trajet",
-              "nativeQueryRef": "trajet"
+              "nativeQueryRef": "trajet",
+              "active": true
             }
           ]
         },
@@ -85,7 +67,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Ponctualité selon le jour de la semaine'"
+                  "Value": "'Ponctualité par trajet'"
                 }
               }
             }
