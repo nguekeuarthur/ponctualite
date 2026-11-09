@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "demain_02",
+  "position": {
+    "x": 228,
+    "y": 100,
+    "z": 2,
+    "width": 198,
+    "height": 100,
+    "tabOrder": 2
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "Risque maximal"
+                }
+              },
+              "queryRef": "prediction.Risque maximal",
+              "nativeQueryRef": "Risque maximal"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

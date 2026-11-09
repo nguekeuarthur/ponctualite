@@ -1,0 +1,90 @@
+table prediction
+
+	measure 'Risque de retard' = AVERAGE(prediction[probabilite_retard])
+		formatString: 0 %
+
+	measure 'Risque maximal' = MAX(prediction[probabilite_retard])
+		formatString: 0 %
+
+	measure 'Trajets prédits' = COUNTROWS(prediction)
+		formatString: 0
+
+	measure 'Taux historique du trajet' = AVERAGE(prediction[taux_historique])
+		formatString: 0 %
+
+	column jour_cible
+		dataType: dateTime
+		formatString: dd.MM.yyyy
+		summarizeBy: none
+		sourceColumn: jour_cible
+
+	column trajet
+		dataType: string
+		summarizeBy: none
+		sourceColumn: trajet
+
+	column station_meteo
+		dataType: string
+		summarizeBy: none
+		sourceColumn: station_meteo
+
+	column probabilite_retard
+		dataType: double
+		formatString: 0 %
+		summarizeBy: none
+		sourceColumn: probabilite_retard
+
+	column niveau
+		dataType: string
+		summarizeBy: none
+		sourceColumn: niveau
+
+	column taux_historique
+		dataType: double
+		formatString: 0 %
+		summarizeBy: none
+		sourceColumn: taux_historique
+
+	column taux_meme_jour_semaine
+		dataType: double
+		formatString: 0 %
+		summarizeBy: none
+		sourceColumn: taux_meme_jour_semaine
+
+	column taux_10_derniers_jours
+		dataType: double
+		formatString: 0 %
+		summarizeBy: none
+		sourceColumn: taux_10_derniers_jours
+
+	column temp_min_prevue
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: temp_min_prevue
+
+	column precip_prevue_mm
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: precip_prevue_mm
+
+	column rafale_prevue_ms
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: rafale_prevue_ms
+
+	column genere_le
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm
+		summarizeBy: none
+		sourceColumn: genere_le
+
+	partition prediction = entity
+		mode: directLake
+		source
+			entityName: prediction
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

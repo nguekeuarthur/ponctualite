@@ -1,0 +1,158 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "demain_10",
+  "position": {
+    "x": 660,
+    "y": 475,
+    "z": 10,
+    "width": 600,
+    "height": 225,
+    "tabOrder": 10
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_evaluation"
+                    }
+                  },
+                  "Property": "coupure"
+                }
+              },
+              "queryRef": "modele_evaluation.coupure",
+              "nativeQueryRef": "coupure"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_evaluation"
+                    }
+                  },
+                  "Property": "n_apprentissage"
+                }
+              },
+              "queryRef": "modele_evaluation.n_apprentissage",
+              "nativeQueryRef": "n_apprentissage"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_evaluation"
+                    }
+                  },
+                  "Property": "n_test"
+                }
+              },
+              "queryRef": "modele_evaluation.n_test",
+              "nativeQueryRef": "n_test"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_evaluation"
+                    }
+                  },
+                  "Property": "taux_retard_test"
+                }
+              },
+              "queryRef": "modele_evaluation.taux_retard_test",
+              "nativeQueryRef": "taux_retard_test"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_evaluation"
+                    }
+                  },
+                  "Property": "auc_modele"
+                }
+              },
+              "queryRef": "modele_evaluation.auc_modele",
+              "nativeQueryRef": "auc_modele"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_evaluation"
+                    }
+                  },
+                  "Property": "auc_reference"
+                }
+              },
+              "queryRef": "modele_evaluation.auc_reference",
+              "nativeQueryRef": "auc_reference"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_evaluation"
+                    }
+                  },
+                  "Property": "brier_modele"
+                }
+              },
+              "queryRef": "modele_evaluation.brier_modele",
+              "nativeQueryRef": "brier_modele"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_evaluation"
+                    }
+                  },
+                  "Property": "brier_reference"
+                }
+              },
+              "queryRef": "modele_evaluation.brier_reference",
+              "nativeQueryRef": "brier_reference"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Évaluation : apprentissage sur le passé, test sur les derniers jours'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -271,7 +271,55 @@ def pages():
          "Y": [mesure("fait_trajet", "Retard moyen (min)")], "Series": [colonne("fait_trajet", "trajet")]},
         "Chaque jour : précipitations du matin et retard à l'arrivée",
     )
-    return [trajets, lignes, alternatives, meteo]
+    # Page 5 : le risque de demain, et ce que vaut le modèle
+    demain = Page("demain", "Demain")
+    demain.segment(MARGE, MARGE, 400, 60, colonne("prediction", "jour_cible"), "Jour prédit")
+    demain.cartes(
+        100,
+        [
+            mesure("prediction", "Risque de retard"),
+            mesure("prediction", "Risque maximal"),
+            mesure("prediction", "Taux historique du trajet"),
+            mesure("modele_evaluation", "AUC du modèle"),
+            mesure("modele_evaluation", "AUC de la référence"),
+            mesure("modele_evaluation", "Jours de test"),
+        ],
+    )
+    demain.visuel(
+        "tableEx", MARGE, 220, 820, 240,
+        {"Values": [
+            colonne("prediction", "jour_cible"), colonne("prediction", "trajet"), colonne("prediction", "niveau"),
+            mesure("prediction", "Risque de retard"), colonne("prediction", "taux_historique"),
+            colonne("prediction", "taux_10_derniers_jours"), colonne("prediction", "temp_min_prevue"),
+            colonne("prediction", "precip_prevue_mm"), colonne("prediction", "rafale_prevue_ms"),
+        ]},
+        "Risque de retard par trajet, avec la météo prévue du matin",
+        objets=fond_degrade(mesure("prediction", "Risque de retard"), couleur_min="#1AAB40", couleur_max="#D64550"),
+        tri=(mesure("prediction", "Risque de retard"), "Descending"),
+    )
+    demain.visuel(
+        "clusteredBarChart", 860, 220, 400, 240,
+        {"Category": [colonne("prediction", "trajet")], "Y": [mesure("prediction", "Risque de retard")]},
+        "Risque par trajet",
+        tri=(mesure("prediction", "Risque de retard"), "Descending"),
+    )
+    demain.visuel(
+        "clusteredBarChart", MARGE, 475, 620, 225,
+        {"Category": [colonne("modele_importance", "variable")], "Y": [mesure("modele_importance", "Importance de la variable")]},
+        "Ce qui pèse dans la prédiction (importance par permutation)",
+        tri=(mesure("modele_importance", "Importance de la variable"), "Descending"),
+    )
+    demain.visuel(
+        "tableEx", 660, 475, 600, 225,
+        {"Values": [
+            colonne("modele_evaluation", "coupure"), colonne("modele_evaluation", "n_apprentissage"),
+            colonne("modele_evaluation", "n_test"), colonne("modele_evaluation", "taux_retard_test"),
+            colonne("modele_evaluation", "auc_modele"), colonne("modele_evaluation", "auc_reference"),
+            colonne("modele_evaluation", "brier_modele"), colonne("modele_evaluation", "brier_reference"),
+        ]},
+        "Évaluation : apprentissage sur le passé, test sur les derniers jours",
+    )
+    return [trajets, lignes, alternatives, meteo, demain]
 
 
 def main():

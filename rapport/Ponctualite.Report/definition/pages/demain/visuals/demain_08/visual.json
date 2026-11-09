@@ -1,0 +1,97 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "demain_08",
+  "position": {
+    "x": 860,
+    "y": 220,
+    "z": 8,
+    "width": 400,
+    "height": 240,
+    "tabOrder": 8
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "trajet"
+                }
+              },
+              "queryRef": "prediction.trajet",
+              "nativeQueryRef": "trajet",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "Risque de retard"
+                }
+              },
+              "queryRef": "prediction.Risque de retard",
+              "nativeQueryRef": "Risque de retard"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "prediction"
+                  }
+                },
+                "Property": "Risque de retard"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Risque par trajet'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,29 @@
+table modele_importance
+
+	measure 'Importance de la variable' = SUM(modele_importance[importance])
+		formatString: 0.000
+
+	column variable
+		dataType: string
+		summarizeBy: none
+		sourceColumn: variable
+
+	column importance
+		dataType: double
+		formatString: 0.000
+		summarizeBy: sum
+		sourceColumn: importance
+
+	column genere_le
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm
+		summarizeBy: none
+		sourceColumn: genere_le
+
+	partition modele_importance = entity
+		mode: directLake
+		source
+			entityName: modele_importance
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

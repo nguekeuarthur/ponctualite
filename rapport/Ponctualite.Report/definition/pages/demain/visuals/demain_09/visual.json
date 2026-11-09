@@ -1,0 +1,97 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "demain_09",
+  "position": {
+    "x": 20,
+    "y": 475,
+    "z": 9,
+    "width": 620,
+    "height": 225,
+    "tabOrder": 9
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_importance"
+                    }
+                  },
+                  "Property": "variable"
+                }
+              },
+              "queryRef": "modele_importance.variable",
+              "nativeQueryRef": "variable",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_importance"
+                    }
+                  },
+                  "Property": "Importance de la variable"
+                }
+              },
+              "queryRef": "modele_importance.Importance de la variable",
+              "nativeQueryRef": "Importance de la variable"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "modele_importance"
+                  }
+                },
+                "Property": "Importance de la variable"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Ce qui pèse dans la prédiction (importance par permutation)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

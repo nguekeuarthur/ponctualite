@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "demain_05",
+  "position": {
+    "x": 852,
+    "y": 100,
+    "z": 5,
+    "width": 198,
+    "height": 100,
+    "tabOrder": 5
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "modele_evaluation"
+                    }
+                  },
+                  "Property": "AUC de la référence"
+                }
+              },
+              "queryRef": "modele_evaluation.AUC de la référence",
+              "nativeQueryRef": "AUC de la référence"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

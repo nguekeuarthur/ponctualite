@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "demain_01",
+  "position": {
+    "x": 20,
+    "y": 100,
+    "z": 1,
+    "width": 198,
+    "height": 100,
+    "tabOrder": 1
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "Risque de retard"
+                }
+              },
+              "queryRef": "prediction.Risque de retard",
+              "nativeQueryRef": "Risque de retard"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

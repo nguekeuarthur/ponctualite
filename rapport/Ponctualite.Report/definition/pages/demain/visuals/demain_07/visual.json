@@ -1,0 +1,253 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "demain_07",
+  "position": {
+    "x": 20,
+    "y": 220,
+    "z": 7,
+    "width": 820,
+    "height": 240,
+    "tabOrder": 7
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "jour_cible"
+                }
+              },
+              "queryRef": "prediction.jour_cible",
+              "nativeQueryRef": "jour_cible"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "trajet"
+                }
+              },
+              "queryRef": "prediction.trajet",
+              "nativeQueryRef": "trajet"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "niveau"
+                }
+              },
+              "queryRef": "prediction.niveau",
+              "nativeQueryRef": "niveau"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "Risque de retard"
+                }
+              },
+              "queryRef": "prediction.Risque de retard",
+              "nativeQueryRef": "Risque de retard"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "taux_historique"
+                }
+              },
+              "queryRef": "prediction.taux_historique",
+              "nativeQueryRef": "taux_historique"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "taux_10_derniers_jours"
+                }
+              },
+              "queryRef": "prediction.taux_10_derniers_jours",
+              "nativeQueryRef": "taux_10_derniers_jours"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "temp_min_prevue"
+                }
+              },
+              "queryRef": "prediction.temp_min_prevue",
+              "nativeQueryRef": "temp_min_prevue"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "precip_prevue_mm"
+                }
+              },
+              "queryRef": "prediction.precip_prevue_mm",
+              "nativeQueryRef": "precip_prevue_mm"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction"
+                    }
+                  },
+                  "Property": "rafale_prevue_ms"
+                }
+              },
+              "queryRef": "prediction.rafale_prevue_ms",
+              "nativeQueryRef": "rafale_prevue_ms"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "prediction"
+                  }
+                },
+                "Property": "Risque de retard"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "values": [
+        {
+          "properties": {
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "FillRule": {
+                      "Input": {
+                        "Measure": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "prediction"
+                            }
+                          },
+                          "Property": "Risque de retard"
+                        }
+                      },
+                      "FillRule": {
+                        "linearGradient2": {
+                          "min": {
+                            "color": {
+                              "Literal": {
+                                "Value": "'#1AAB40'"
+                              }
+                            }
+                          },
+                          "max": {
+                            "color": {
+                              "Literal": {
+                                "Value": "'#D64550'"
+                              }
+                            }
+                          },
+                          "nullColoringStrategy": {
+                            "strategy": {
+                              "Literal": {
+                                "Value": "'asZero'"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "prediction.Risque de retard"
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Risque de retard par trajet, avec la météo prévue du matin'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

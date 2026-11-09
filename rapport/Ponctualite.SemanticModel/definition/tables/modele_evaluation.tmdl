@@ -1,0 +1,75 @@
+table modele_evaluation
+
+	measure 'AUC du modèle' = MAX(modele_evaluation[auc_modele])
+		formatString: 0.00
+
+	measure 'AUC de la référence' = MAX(modele_evaluation[auc_reference])
+		formatString: 0.00
+
+	measure 'Jours de test' = MAX(modele_evaluation[n_test])
+		formatString: 0
+
+	measure 'Taux de retard en test' = MAX(modele_evaluation[taux_retard_test])
+		formatString: 0 %
+
+	column genere_le
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm
+		summarizeBy: none
+		sourceColumn: genere_le
+
+	column coupure
+		dataType: dateTime
+		formatString: dd.MM.yyyy
+		summarizeBy: none
+		sourceColumn: coupure
+
+	column n_apprentissage
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: n_apprentissage
+
+	column n_test
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: n_test
+
+	column taux_retard_test
+		dataType: double
+		formatString: 0 %
+		summarizeBy: none
+		sourceColumn: taux_retard_test
+
+	column auc_modele
+		dataType: double
+		formatString: 0.00
+		summarizeBy: none
+		sourceColumn: auc_modele
+
+	column auc_reference
+		dataType: double
+		formatString: 0.00
+		summarizeBy: none
+		sourceColumn: auc_reference
+
+	column brier_modele
+		dataType: double
+		formatString: 0.000
+		summarizeBy: none
+		sourceColumn: brier_modele
+
+	column brier_reference
+		dataType: double
+		formatString: 0.000
+		summarizeBy: none
+		sourceColumn: brier_reference
+
+	partition modele_evaluation = entity
+		mode: directLake
+		source
+			entityName: modele_evaluation
+			schemaName: gold
+			expressionSource: DatabaseQuery
+
