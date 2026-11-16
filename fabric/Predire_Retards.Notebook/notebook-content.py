@@ -30,6 +30,8 @@
 # - **Prévision** : pour le prochain jour ouvré, avec la prévision météo [Open-Meteo](https://open-meteo.com) aux
 #   coordonnées de la station associée au départ. Résultat dans `gold.prediction` (une ligne par trajet et par jour cible,
 #   conservée pour pouvoir juger les prédictions après coup).
+# - **Modèle sémantique** : en fin de notebook, le modèle Direct Lake est rafraîchi pour que la page « Demain »
+#   du rapport lise la prévision du soir.
 #
 # Avec quelques centaines de jours par trajet, le modèle reste simple (gradient boosting peu profond) : il sert à
 # hiérarchiser le risque, pas à promettre une minute près.
@@ -248,6 +250,28 @@ if spark.catalog.tableExists("gold.prediction"):
     ancienne = spark.table("gold.prediction").join(nouvelle.select("jour_cible", "trajet"), ["jour_cible", "trajet"], "left_anti")
     nouvelle = ancienne.unionByName(nouvelle, allowMissingColumns=True)
 ecrire(nouvelle, "gold.prediction")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Dernière étape : demander au modèle sémantique Direct Lake de relire les tables gold (« recadrage »), pour que la
+# page « Demain » du rapport affiche la prévision qui vient d'être écrite.
+# L'étape ne fait jamais échouer la prévision : si le modèle n'est pas encore déployé, elle est ignorée.
+MODELE_SEMANTIQUE = "Ponctualite"
+
+try:
+    import sempy.fabric as fabric
+
+    demande = fabric.refresh_dataset(dataset=MODELE_SEMANTIQUE, refresh_type="full")
+    print(f"Modèle sémantique {MODELE_SEMANTIQUE} : rafraîchissement demandé ({demande})")
+except Exception as e:  # modèle absent, droits manquants ou service indisponible
+    print(f"Modèle sémantique {MODELE_SEMANTIQUE} non rafraîchi : {type(e).__name__} : {e}")
 
 # METADATA ********************
 

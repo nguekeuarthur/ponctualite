@@ -150,10 +150,10 @@ exécutions planifiées et Fabric suspend alors la planification après quelques
 Les fichiers des archives s'appellent `AAAA-MM-JJ_IstDaten.csv` (majuscules) alors que les quotidiens en ligne
 s'appellent `AAAA-MM-JJ_istdaten.csv`.
 
-`Transformer_Passages` se termine par un rafraîchissement du modèle sémantique (`sempy.fabric.refresh_dataset`),
-pour que le rapport lise les tables du jour. Sans lui, le modèle Direct Lake pouvait rester en retard : le 16.11.2026,
-la première requête de la journée renvoyait encore l'état du 10.11. L'étape n'interrompt jamais la transformation :
-si le modèle n'est pas encore déployé, elle est ignorée.
+`Transformer_Passages` et `Predire_Retards` se terminent par un rafraîchissement du modèle sémantique
+(`sempy.fabric.refresh_dataset`), pour que le rapport lise les tables du jour et la prévision du soir. Sans lui, le
+modèle Direct Lake pouvait rester en retard : le 16.11.2026, la première requête de la journée renvoyait encore l'état
+du 10.11. L'étape n'interrompt jamais un notebook : si le modèle n'est pas encore déployé, elle est ignorée.
 
 ```powershell
 # 4. Temps réel : tester la clé OJP, envoyer la clé dans le lakehouse, déployer et planifier le collecteur
