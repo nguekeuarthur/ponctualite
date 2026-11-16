@@ -24,6 +24,8 @@
 # - **Gold** : un modèle en étoile pour Power BI :
 #   `dim_date`, `dim_ligne`, `dim_arret`, `fait_passage` (un passage à un arrêt)
 #   et `fait_trajet` (un trajet suivi par jour : « mon train de 07:55 », avec son retard réel à l'arrivée).
+# - **Modèle sémantique** : en fin de notebook, le modèle Direct Lake est rafraîchi pour que le rapport
+#   lise les tables du jour.
 #
 # Définition de la ponctualité : comme aux CFF, un passage est ponctuel si le retard à l'arrivée est **inférieur à 3 minutes**.
 # Un train supprimé n'est jamais ponctuel.
@@ -259,6 +261,28 @@ ecrire(fait_trajet, "gold.fait_trajet")
 fait_trajet.orderBy("trajet", "jour").select(
     "jour", "nom_jour", "trajet", "depart_prevu", "arrivee_prevue", "arrivee_reelle", "retard_arrivee_min", "ponctuel", "supprime"
 ).show(100, truncate=False)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Dernière étape : demander au modèle sémantique Direct Lake de relire les tables gold (« recadrage »).
+# Sans cela, le rapport peut rester sur la version précédente des tables tant que personne ne l'a ouvert.
+# L'étape ne fait jamais échouer la transformation : si le modèle n'est pas encore déployé, elle est ignorée.
+MODELE_SEMANTIQUE = "Ponctualite"
+
+try:
+    import sempy.fabric as fabric
+
+    demande = fabric.refresh_dataset(dataset=MODELE_SEMANTIQUE, refresh_type="full")
+    print(f"Modèle sémantique {MODELE_SEMANTIQUE} : rafraîchissement demandé ({demande})")
+except Exception as e:  # modèle absent, droits manquants ou service indisponible
+    print(f"Modèle sémantique {MODELE_SEMANTIQUE} non rafraîchi : {type(e).__name__} : {e}")
 
 # METADATA ********************
 
