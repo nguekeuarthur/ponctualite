@@ -2,7 +2,7 @@
 
 L'application CFF me dit que **mon train a du retard**. Ce projet me dit **lequel prendre pour ne pas en avoir** :
 il mesure la fiabilité réelle de mes trajets quotidiens sur plusieurs mois, cherche les schémas
-(jour de la semaine, heure, saison, météo) et finira par prédire le risque de retard avant le départ.
+(jour de la semaine, heure, saison, météo) et prédit chaque soir le risque de retard du lendemain.
 
 Projet personnel construit sur Microsoft Fabric (essai), avec les données ouvertes des transports publics suisses.
 
@@ -11,7 +11,7 @@ Projet personnel construit sur Microsoft Fabric (essai), avec les données ouver
 | Source | Contenu | Usage |
 |---|---|---|
 | [Ist-Daten v2](https://data.opentransportdata.swiss/en/dataset/ist-daten-v2) (opentransportdata.swiss) | Tous les passages réalisés en Suisse la veille : horaire prévu, horaire réel, suppression, pour chaque arrêt de chaque course (~2,6 millions de lignes par jour) | Historique : les 35 derniers jours en ligne, les mois précédents dans les [archives](https://archive.opentransportdata.swiss/actual_data_archive.htm) |
-| OJP 2.0 (API) | Départs en temps réel à un arrêt | Flux temps réel (à venir) |
+| OJP 2.0 (API) | Départs en temps réel à un arrêt | Flux temps réel : un relevé toutes les 5 minutes dans l'Eventhouse |
 | [MétéoSuisse, SwissMetNet](https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/) (données ouvertes) | Observations horaires des stations automatiques (température, précipitations, vent, neige au sol), fichiers `h_historical`, `h_recent`, `h_now` par station | Météo du matin de chaque trajet : gel, neige, pluie, vent |
 
 Les Ist-Daten couvrent les trains, bus, trams et le métro m1 lausannois ; le m2 n'y figure pas.
@@ -43,15 +43,56 @@ Eventhouse Ponctualite_TR, table departs : un instantané par relevé et par dé
           sait-on qu'un train sera en retard ? »
 ```
 
-## Premiers résultats (01.10 → 08.11.2026, jours ouvrés)
+## Résultats sur 16 mois (14.07.2025 → 13.11.2026, jours ouvrés)
 
-| Trajet suivi | Jours | Ponctuel (< 3 min) | Retard moyen à l'arrivée | Pire jour | Supprimé |
+Sept trajets suivis sur 350 jours ouvrés, soit 2'119 trajets mesurés : 85 % arrivent avec moins de 3 minutes de retard
+et 21 ont été supprimés. Les libellés restent génériques, le périmètre réel n'est pas publié.
+
+| Trajet suivi | Jours mesurés | Ponctuel (< 3 min) | Retard moyen à l'arrivée | Pire jour | Supprimé |
 |---|---|---|---|---|---|
-| Bus de rabattement vers la gare | 22 | 86 % | +0,9 min | +3,3 min | 0 |
-| Train du matin n° 1 (IR) | 26 | 92 % | −0,2 min | +5,6 min | 0 |
-| Train du matin n° 2 (R) | 26 | 80 % | +2,1 min | +5,8 min | 1 |
+| **Itinéraire A** | | | | | |
+| Bus urbain vers la gare | 236 | 82 % | +1,6 min | +15,8 min | 1 |
+| Train du matin (IR) | 349 | 93 % | −0,2 min | +18,7 min | 12 |
+| **Itinéraire B** | | | | | |
+| Bus régional vers la gare, premier départ | 332 | 94 % | +0,7 min | +12,6 min | 0 |
+| Bus régional vers la gare voisine, départ suivant | 332 | 78 % | −0,2 min | +14,0 min | 0 |
+| Train régional habituel (R) | 315 | 86 % | +1,6 min | +11,7 min | 4 |
+| Train régional précédent (R), en alternative | 315 | 86 % | +1,4 min | +12,2 min | 3 |
+| **Dernier kilomètre** | | | | | |
+| Bus urbain de la gare au travail | 240 | 72 % | +2,1 min | +21,4 min | 1 |
 
-Le train régional est le maillon faible : un jour sur cinq, il arrive avec plus de 3 minutes de retard.
+Les deux bus urbains ne sont mesurés que depuis décembre 2025.
+
+Ce que disent les chiffres :
+
+- **L'InterRegio est régulier, mais souvent supprimé.** Il est ponctuel 93 % du temps et il a été supprimé 12 fois
+  en 16 mois, plus que les six autres trajets réunis.
+- **Le maillon faible est le dernier kilomètre.** Le bus de la gare au travail n'est ponctuel que 72 % du temps,
+  même s'il s'améliore nettement depuis l'été 2026.
+- **Le train régional habituel se dégrade.** Il était ponctuel 98 % du temps à l'été 2025, il l'est 72 % du temps
+  cet automne. Son alternative, le train précédent, est descendue à 75 %.
+- **Pour le bus régional, le premier départ est le bon.** Le départ suivant, vers la gare voisine, a perdu
+  vingt à trente points de ponctualité depuis le début de 2026.
+
+| Ponctualité par trimestre | T3 2025 | T4 2025 | T1 2026 | T2 2026 | T3 2026 | T4 2026 (au 13.11) |
+|---|---|---|---|---|---|---|
+| Train régional habituel (R) | 98 % | 92 % | 83 % | 86 % | 74 % | 72 % |
+| Bus régional vers la gare voisine, départ suivant | 98 % | 92 % | 62 % | 73 % | 72 % | 66 % |
+| Bus urbain de la gare au travail | | 100 % (13 jours) | 58 % | 62 % | 85 % | 81 % |
+
+La pluie du matin coûte quinze points de ponctualité, le gel presque rien :
+
+| Conditions du matin (05:00–09:59) | Trajets mesurés | Ponctuel (< 3 min) |
+|---|---|---|
+| Sec | 1'464 | 87 % |
+| Gel (minimum de 0 °C ou moins) | 202 | 85 % |
+| Bruine (moins de 2 mm) | 252 | 82 % |
+| Pluie (2 mm ou plus) | 163 | 72 % |
+
+Les matins de vent fort (31 trajets) et de neige au sol (7) sont trop rares pour conclure.
+
+Limite connue : chaque étape est mesurée seule, à son heure habituelle. Une correspondance manquée à cause du retard
+de l'étape précédente n'est pas encore comptée.
 
 Un trajet suivi est défini par un arrêt de départ, une ligne et une heure habituelle ; la course retenue chaque jour
 est la première de la ligne à partir de cette heure (tolérance de 10 minutes), ce qui absorbe les horaires de vacances
@@ -117,7 +158,7 @@ python -I .\ponctualite\scripts\tester_ojp.py 8501118 "Renens VD"
 .\ponctualite\fab.ps1 job run-sch "Ponctualite.Workspace/Collecter_Temps_Reel.Notebook" --type cron --interval 5 --start 2026-11-09T10:00:00 --end 2026-12-28T23:59:00 --enable
 ```
 
-Neuf arrêts relevés toutes les 5 minutes = ~2'600 requêtes par jour, sous la limite gratuite de l'API (20'000 par jour).
+Treize arrêts relevés toutes les 5 minutes = ~3'700 requêtes par jour, sous la limite gratuite de l'API (20'000 par jour).
 
 ```powershell
 # 5. Power BI : modèle sémantique Direct Lake (TMDL) puis rapport PBIR généré par script
@@ -152,14 +193,17 @@ Deux pages, rafraîchies toutes les 5 minutes, sur la table `departs` de l'Event
    3 minutes ou plus selon le temps restant avant le départ, et part des courses dont le retard était connu dès la
    première annonce. Cette page prend son sens avec quelques semaines de relevés.
 
+Après une semaine de collecte (09.11 → 16.11.2026) : 524'000 départs relevés sur 13 arrêts, environ 98 % des relevés
+attendus chaque jour, sans interruption depuis le premier après-midi.
+
 ## Le rapport
 
-Trois pages, en Direct Lake sur le modèle gold :
+Cinq pages, en Direct Lake sur le modèle gold :
 
 1. **Mes trajets** : ponctualité, retard moyen et maximal, jours à plus de 3 minutes, suppressions, minutes perdues ;
    retard jour par jour, ponctualité selon le jour de la semaine, liste des pires jours.
-2. **Lignes et gares** : les 869'000 passages du périmètre ; ponctualité par ligne, retard selon l'heure de la journée,
-   matrice ligne × jour de la semaine colorée du rouge au vert.
+2. **Lignes et gares** : les 13,75 millions de passages du périmètre (90 lignes, 445 arrêts) ; ponctualité par ligne,
+   retard selon l'heure de la journée, matrice ligne × jour de la semaine colorée du rouge au vert.
 3. **Alternatives** : pour une gare d'arrivée, la ponctualité de chaque ligne heure par heure, puis chaque horaire avec
    sa fiabilité : de quoi choisir le train à prendre plutôt que celui qu'on a l'habitude de prendre.
 4. **Météo** : ponctualité et retard selon les conditions du matin, et deux nuages de points (température minimale,
@@ -177,10 +221,29 @@ honnêtement : apprentissage sur le passé, test sur les 60 derniers jours obser
 [Open-Meteo](https://open-meteo.com) aux coordonnées de la station associée au départ, et conserve chaque prédiction
 dans `gold.prediction` pour pouvoir la juger après coup.
 
-Premier résultat (09.11.2026, 1'690 jours d'apprentissage, 406 de test) : AUC 0,64 contre 0,60 pour la référence.
-Le signal principal est la forme récente du trajet, puis le trajet lui-même, le jour de la semaine et la pluie du matin ;
-la température et le vent n'apportent rien. Autrement dit : un train qui traîne depuis dix jours continuera
-probablement, et la pluie n'arrange rien ; le reste est du bruit à ce stade.
+Le modèle est réentraîné chaque soir. Au 15.11.2026 (1'719 trajets d'apprentissage, 419 de test) : AUC 0,69 contre
+0,60 pour la référence, score de Brier 0,157 contre 0,163. Le premier essai du 09.11 donnait 0,64 contre 0,60 : sur un
+test de 419 lignes, le score bouge d'un jour à l'autre et se lit comme un ordre de grandeur.
+La forme récente du trajet (retard moyen des 10 derniers jours) pèse trois fois plus que toute autre variable ;
+viennent ensuite la pluie du matin, le jour de la semaine et les rafales. La température n'apporte rien.
+Autrement dit : un train qui traîne depuis dix jours continuera probablement, et la pluie n'arrange rien.
+
+### La première semaine, jugée après coup
+
+Chaque soir, le modèle note chaque trajet du lendemain : « élevé » dès 25 % de risque, « moyen » dès 12 %, « faible »
+en dessous. Un retard réel est une arrivée à 3 minutes ou plus, ou une suppression.
+
+| Jour | Matin | Alertes « élevé » | Retards réels sur 7 trajets |
+|---|---|---|---|
+| Mardi 10.11.2026 | pluie | 3 | 3, dont 2 parmi les alertes |
+| Mercredi 11.11.2026 | bruine | 0 | 2 |
+| Jeudi 12.11.2026 | bruine | 0 | 3, dont une suppression |
+| Vendredi 13.11.2026 | sec | 0 | 0 |
+
+Le modèle a vu venir le matin de pluie et il est resté calme le matin sec. Il a manqué les deux incidents de
+l'InterRegio, 8 minutes de retard le mercredi puis une suppression le jeudi, tous deux notés à 7 % : un incident
+d'exploitation ne se lit ni dans la météo ni dans la forme récente. Quatre jours ne prouvent rien ; chaque prévision
+reste dans `gold.prediction` et le jugement se refera sur plusieurs semaines.
 
 ```powershell
 .\ponctualite\fab.ps1 import "Ponctualite.Workspace/Predire_Retards.Notebook" -i .\ponctualite\fabric\Predire_Retards.Notebook --format .py -f
@@ -203,11 +266,11 @@ ponctualite/
 │   └── Collecter_Temps_Reel.Notebook/   relevé OJP → Eventhouse (Python)
 ├── rapport/
 │   ├── Ponctualite.SemanticModel/     modèle Direct Lake (TMDL) : tables, relations, mesures
-│   ├── generer_rapport.py             génère le rapport PBIR (3 pages, 29 visuels)
+│   ├── generer_rapport.py             génère le rapport PBIR (5 pages, 53 visuels)
 │   ├── verifier.py                    exécute une requête DAX sur le modèle
 │   └── theme/                         thème Power BI de base
 ├── temps_reel/
-│   ├── generer_tableau_de_bord.py     génère le Real-Time Dashboard (2 pages, 10 tuiles)
+│   ├── generer_tableau_de_bord.py     génère le Real-Time Dashboard (2 pages, 11 tuiles)
 │   └── Ponctualite_TR.KQLDashboard/   définition générée
 ├── scripts/
 │   └── tester_ojp.py                  prochains départs d'un arrêt, en ligne de commande
