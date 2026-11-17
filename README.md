@@ -6,6 +6,41 @@ il mesure la fiabilité réelle de mes trajets quotidiens sur plusieurs mois, ch
 
 Projet personnel construit sur Microsoft Fabric (essai), avec les données ouvertes des transports publics suisses.
 
+## Aperçu
+
+![Cinq pages du rapport Power BI, l'une après l'autre](docs/apercu.gif)
+
+*Cinq des sept pages du rapport, en mode public : chaque trajet porte un libellé générique, sans arrêt ni horaire
+(voir « Confidentialité »). Captures du 17.11.2026.*
+
+<details>
+<summary><b>Les pages une par une</b></summary>
+
+**Porte à porte.** Les itinéraires complets, correspondances comprises : part des voyages qui se passent comme prévu,
+correspondances manquées mois après mois, marge réelle à chaque correspondance.
+
+![Page « Porte à porte » du rapport](docs/porte-a-porte.png)
+
+**Mes trajets.** Chaque étape mesurée seule : ponctualité, retard jour par jour, jours de la semaine, pires jours.
+
+![Page « Mes trajets » du rapport](docs/mes-trajets.png)
+
+**Prévisions contre réalité.** Chaque prévision passée rapprochée de ce qui s'est produit : calibration par niveau,
+alertes justifiées ou non, score de Brier face à la référence naïve.
+
+![Page « Prévisions contre réalité » du rapport](docs/previsions-contre-realite.png)
+
+**Demain.** Le risque de retard de chaque trajet pour le prochain jour ouvré, avec la météo prévue et ce qui pèse
+dans la prédiction.
+
+![Page « Demain » du rapport](docs/demain.png)
+
+**Météo.** Ponctualité et retard selon les conditions du matin.
+
+![Page « Météo » du rapport](docs/meteo.png)
+
+</details>
+
 ## Les données
 
 | Source | Contenu | Usage |
@@ -385,6 +420,7 @@ vérifie qu'Entra ID l'accepte, puis la CLI Fabric l'échange contre un jeton En
 ponctualite/
 ├── .github/workflows/
 │   └── deploy-fabric.yml         vérification et déploiement continu
+├── docs/                         captures du rapport en mode public, pour ce README
 ├── config/
 │   ├── trajets.exemple.json      format du périmètre (publié)
 │   └── trajets.json              mon périmètre (jamais publié)
