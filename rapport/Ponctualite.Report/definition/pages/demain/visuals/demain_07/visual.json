@@ -41,7 +41,8 @@
                 }
               },
               "queryRef": "dim_trajet.trajet",
-              "nativeQueryRef": "trajet"
+              "nativeQueryRef": "trajet",
+              "displayName": "Trajet"
             },
             {
               "field": {

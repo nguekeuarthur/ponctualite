@@ -143,6 +143,9 @@ public (`python rapport/generer_rapport.py <id du modèle> --public`), il n'affi
 trajet et de chaque itinéraire (clé `nom_public` de la configuration) et laisse de côté les heures de passage.
 Les données sont les mêmes : seule la colonne affichée change, dans les dimensions `gold.dim_trajet` et
 `gold.dim_itineraire`. C'est ce mode qui sert aux captures et aux démonstrations.
+Le mode public écarte aussi, dans le graphique d'importance des variables, celles que le modèle crée pour chaque
+trajet et qui portent son nom configuré. Les captures de ce README sont produites par
+[`scripts/capturer_rapport.py`](scripts/capturer_rapport.py) sur le rapport déployé en mode public, puis relues une à une.
 
 ## Lancer le projet
 
@@ -401,6 +404,7 @@ ponctualite/
 │   ├── generer_tableau_de_bord.py     génère le Real-Time Dashboard (2 pages, 11 tuiles)
 │   └── Ponctualite_TR.KQLDashboard/   définition générée
 ├── scripts/
+│   ├── capturer_rapport.py            exporte des pages du rapport en images, pour ce README
 │   ├── planifications.py              relève ou compare les planifications des notebooks (utilisé par le flux)
 │   └── tester_ojp.py                  prochains départs d'un arrêt, en ligne de commande
 ├── .env                           clé OJP (jamais publiée)

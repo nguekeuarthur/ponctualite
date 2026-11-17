@@ -46,7 +46,8 @@
                 }
               },
               "queryRef": "fait_correspondance.correspondance",
-              "nativeQueryRef": "correspondance"
+              "nativeQueryRef": "correspondance",
+              "displayName": "Correspondance"
             }
           ]
         },

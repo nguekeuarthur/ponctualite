@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "dim_itineraire.itineraire",
-              "nativeQueryRef": "itineraire"
+              "nativeQueryRef": "itineraire",
+              "displayName": "Itinéraire"
             },
             {
               "field": {

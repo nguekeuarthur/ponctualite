@@ -28,6 +28,7 @@
               },
               "queryRef": "dim_trajet.trajet",
               "nativeQueryRef": "trajet",
+              "displayName": "Trajet",
               "active": true
             }
           ]

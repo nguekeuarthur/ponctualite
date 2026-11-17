@@ -21,6 +21,7 @@ ESPACE = "Ponctualite"
 MODELE = "Ponctualite"
 LARGEUR, HAUTEUR, MARGE = 1280, 720, 20
 PUBLIC = "--public" in sys.argv
+AFFICHAGE = {}  # nom affiché d'un champ dans les visuels, par référence de requête
 
 
 def ecrire(chemin, contenu):
@@ -53,6 +54,24 @@ def filtre_egal(table, nom, valeur):
                 "Expressions": [{"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": nom}}],
                 "Values": [[{"Literal": {"Value": valeur}}]],
             }}}],
+        },
+        "howCreated": "User",
+    }
+
+
+def filtre_sans_prefixe(table, nom, prefixe):
+    """Filtre de visuel : écarte les valeurs de la colonne qui commencent par le préfixe."""
+    return {
+        "name": f"filtre_{table}_{nom}_sans_prefixe",
+        "field": {"Column": {"Expression": {"SourceRef": {"Entity": table}}, "Property": nom}},
+        "type": "Advanced",
+        "filter": {
+            "Version": 2,
+            "From": [{"Name": "t", "Entity": table, "Type": 0}],
+            "Where": [{"Condition": {"Not": {"Expression": {"StartsWith": {
+                "Left": {"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": nom}},
+                "Right": {"Literal": {"Value": f"'{prefixe}'"}},
+            }}}}}],
         },
         "howCreated": "User",
     }
@@ -95,12 +114,14 @@ class Page:
     def __init__(self, nom, titre, filtres=None):
         self.nom, self.titre, self.visuels, self.filtres = nom, titre, [], filtres or []
 
-    def visuel(self, type_visuel, x, y, l, h, roles, titre=None, objets=None, tri=None):
+    def visuel(self, type_visuel, x, y, l, h, roles, titre=None, objets=None, tri=None, filtres=None):
         etat = {}
         for role, champs in roles.items():
             etat[role] = {
                 "projections": [
-                    {"field": f, "queryRef": ref, "nativeQueryRef": natif, **({"active": True} if role == "Category" else {})}
+                    {"field": f, "queryRef": ref, "nativeQueryRef": natif,
+                     **({"displayName": AFFICHAGE[ref]} if ref in AFFICHAGE else {}),
+                     **({"active": True} if role == "Category" else {})}
                     for f, ref, natif in champs
                 ]
             }
@@ -116,14 +137,15 @@ class Page:
                 "title": [{"properties": {"show": litteral("true"), "text": litteral(f"'{titre}'")}}]
             }
         nom = f"{self.nom}_{len(self.visuels):02d}"
-        self.visuels.append(
-            {
-                "$schema": f"{SCHEMA}/visualContainer/1.5.0/schema.json",
-                "name": nom,
-                "position": {"x": x, "y": y, "z": len(self.visuels), "width": l, "height": h, "tabOrder": len(self.visuels)},
-                "visual": visuel,
-            }
-        )
+        conteneur = {
+            "$schema": f"{SCHEMA}/visualContainer/1.5.0/schema.json",
+            "name": nom,
+            "position": {"x": x, "y": y, "z": len(self.visuels), "width": l, "height": h, "tabOrder": len(self.visuels)},
+            "visual": visuel,
+        }
+        if filtres:
+            conteneur["filterConfig"] = {"filters": filtres}
+        self.visuels.append(conteneur)
 
     def segment(self, x, y, l, h, champ, titre=None, mode="Dropdown"):
         self.visuel(
@@ -158,6 +180,7 @@ def pages():
     trajet = colonne("dim_trajet", "libelle_public" if PUBLIC else "trajet")
     itineraire = colonne("dim_itineraire", "libelle_public" if PUBLIC else "itineraire")
     correspondance = colonne("fait_correspondance", "correspondance_public" if PUBLIC else "correspondance")
+    AFFICHAGE.update({trajet[1]: "Trajet", itineraire[1]: "Itinéraire", correspondance[1]: "Correspondance"})
 
     # Page 1 : mes trajets suivis
     trajets = Page("trajets", "Mes trajets")
@@ -390,6 +413,8 @@ def pages():
         {"Category": [colonne("modele_importance", "variable")], "Y": [mesure("modele_importance", "Importance de la variable")]},
         "Ce qui pèse dans la prédiction (importance par permutation)",
         tri=(mesure("modele_importance", "Importance de la variable"), "Descending"),
+        # Le modèle crée une variable par trajet, qui porte son nom configuré : elles sont écartées en mode public
+        filtres=[filtre_sans_prefixe("modele_importance", "variable", "trajet=")] if PUBLIC else None,
     )
     demain.visuel(
         "tableEx", 660, 475, 600, 225,
