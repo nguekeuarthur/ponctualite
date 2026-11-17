@@ -160,9 +160,13 @@ dim_ligne = (
 )
 ecrire(dim_ligne, "gold.dim_ligne")
 
+# Une ligne par arrêt, sans tenir compte de la casse ni des espaces : c'est ainsi que Power BI compare les textes.
+# Deux graphies du même nom seraient deux lignes pour Spark, mais un doublon de clé qui casse la relation du modèle.
 dim_arret = (
-    s.groupBy("arret")
-    .agg(F.first("bpuic").alias("bpuic"), F.countDistinct("ligne").alias("nb_lignes"), F.count("*").alias("nb_passages"))
+    s.groupBy(F.lower(F.trim(F.regexp_replace("arret", r"\s+", " "))).alias("cle_arret"))
+    .agg(F.min("arret").alias("arret"), F.first("bpuic").alias("bpuic"), F.countDistinct("ligne").alias("nb_lignes"),
+         F.count("*").alias("nb_passages"))
+    .drop("cle_arret")
 )
 ecrire(dim_arret, "gold.dim_arret")
 

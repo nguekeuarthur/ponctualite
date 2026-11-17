@@ -81,6 +81,11 @@ table prediction
 		summarizeBy: none
 		sourceColumn: genere_le
 
+	column derniere_prevision
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: derniere_prevision
+
 	partition prediction = entity
 		mode: directLake
 		source

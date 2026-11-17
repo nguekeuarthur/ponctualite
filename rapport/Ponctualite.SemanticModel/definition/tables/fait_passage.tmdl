@@ -15,7 +15,28 @@ table fait_passage
 	measure 'Retard moyen des passages (min)' = AVERAGE(fait_passage[retard_arrivee_min])
 		formatString: 0.0
 
-	measure 'Retard P90 (min)' = PERCENTILEX.INC(FILTER(fait_passage, NOT ISBLANK(fait_passage[retard_arrivee_min])), fait_passage[retard_arrivee_min], 0.9)
+	/// 90e centile lu sur l'histogramme des retards (valeurs distinctes et leurs effectifs). PERCENTILE.INC et
+	/// PERCENTILEX.INC matérialisent chaque ligne et dépassent la limite de mémoire par requête sur 13 millions de passages.
+	measure 'Retard P90 (min)' =
+			VAR histogramme =
+			    ADDCOLUMNS(
+			        FILTER(VALUES(fait_passage[retard_arrivee_min]), NOT ISBLANK(fait_passage[retard_arrivee_min])),
+			        "@n", CALCULATE(COUNTROWS(fait_passage))
+			    )
+			VAR seuil = 0.9 * SUMX(histogramme, [@n])
+			VAR cumul =
+			    ADDCOLUMNS(
+			        histogramme,
+			        "@cumul",
+			            VAR valeur = fait_passage[retard_arrivee_min]
+			            RETURN SUMX(FILTER(histogramme, fait_passage[retard_arrivee_min] <= valeur), [@n])
+			    )
+			RETURN MINX(FILTER(cumul, [@cumul] >= seuil), fait_passage[retard_arrivee_min])
+		formatString: 0.0
+
+	/// Centile par horaire : calculé seulement quand une gare est choisie. Sans gare, il mélangerait tous les arrêts
+	/// d'une ligne et demanderait près d'une minute de calcul.
+	measure 'Retard P90 par horaire (min)' = IF(ISFILTERED(dim_arret[arret]), [Retard P90 (min)])
 		formatString: 0.0
 
 	measure 'Passages supprimés' = CALCULATE(COUNTROWS(fait_passage), fait_passage[supprime] = TRUE())

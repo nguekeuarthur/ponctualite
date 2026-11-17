@@ -93,11 +93,11 @@
                       "Entity": "fait_passage"
                     }
                   },
-                  "Property": "Retard P90 (min)"
+                  "Property": "Retard P90 par horaire (min)"
                 }
               },
-              "queryRef": "fait_passage.Retard P90 (min)",
-              "nativeQueryRef": "Retard P90 (min)"
+              "queryRef": "fait_passage.Retard P90 par horaire (min)",
+              "nativeQueryRef": "Retard P90 par horaire (min)"
             },
             {
               "field": {
@@ -150,7 +150,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Chaque horaire à l'arrivée, avec sa fiabilité'"
+                  "Value": "'Chaque horaire à l'arrivée, avec sa fiabilité (le retard P90 s'affiche une fois la gare choisie)'"
                 }
               }
             }

@@ -34,6 +34,24 @@ def litteral(valeur):
     return {"expr": {"Literal": {"Value": valeur}}}
 
 
+def filtre_egal(table, nom, valeur):
+    """Filtre de page : la colonne vaut la valeur donnée (littéral : true, 'texte', 3L…). Visible dans le volet Filtres."""
+    return {
+        "name": f"filtre_{table}_{nom}",
+        "field": {"Column": {"Expression": {"SourceRef": {"Entity": table}}, "Property": nom}},
+        "type": "Categorical",
+        "filter": {
+            "Version": 2,
+            "From": [{"Name": "t", "Entity": table, "Type": 0}],
+            "Where": [{"Condition": {"In": {
+                "Expressions": [{"Column": {"Expression": {"SourceRef": {"Source": "t"}}, "Property": nom}}],
+                "Values": [[{"Literal": {"Value": valeur}}]],
+            }}}],
+        },
+        "howCreated": "User",
+    }
+
+
 def fond_degrade(champ, minimum="0.5D", maximum="1D", couleur_min="#D64550", couleur_max="#1AAB40"):
     """Mise en forme conditionnelle : fond des cellules du rouge (min) au vert (max) selon la mesure."""
     expr, ref, _ = champ
@@ -68,8 +86,8 @@ def fond_degrade(champ, minimum="0.5D", maximum="1D", couleur_min="#D64550", cou
 
 
 class Page:
-    def __init__(self, nom, titre):
-        self.nom, self.titre, self.visuels = nom, titre, []
+    def __init__(self, nom, titre, filtres=None):
+        self.nom, self.titre, self.visuels, self.filtres = nom, titre, [], filtres or []
 
     def visuel(self, type_visuel, x, y, l, h, roles, titre=None, objets=None, tri=None):
         etat = {}
@@ -101,10 +119,10 @@ class Page:
             }
         )
 
-    def segment(self, x, y, l, h, champ, titre=None):
+    def segment(self, x, y, l, h, champ, titre=None, mode="Dropdown"):
         self.visuel(
             "slicer", x, y, l, h, {"Values": [champ]}, titre,
-            {"data": [{"properties": {"mode": litteral("'Dropdown'")}}],
+            {"data": [{"properties": {"mode": litteral(f"'{mode}'")}}],
              "header": [{"properties": {"show": litteral("false")}}]},
         )
 
@@ -114,17 +132,17 @@ class Page:
             self.visuel("card", x + i * (largeur + 10), y, largeur, hauteur, {"Values": [c]})
 
     def enregistrer(self, racine):
-        ecrire(
-            racine / self.nom / "page.json",
-            {
-                "$schema": f"{SCHEMA}/page/1.3.0/schema.json",
-                "name": self.nom,
-                "displayName": self.titre,
-                "displayOption": "FitToPage",
-                "height": HAUTEUR,
-                "width": LARGEUR,
-            },
-        )
+        page = {
+            "$schema": f"{SCHEMA}/page/1.3.0/schema.json",
+            "name": self.nom,
+            "displayName": self.titre,
+            "displayOption": "FitToPage",
+            "height": HAUTEUR,
+            "width": LARGEUR,
+        }
+        if self.filtres:
+            page["filterConfig"] = {"filters": self.filtres}
+        ecrire(racine / self.nom / "page.json", page)
         for v in self.visuels:
             ecrire(racine / self.nom / "visuals" / v["name"] / "visual.json", v)
 
@@ -226,10 +244,10 @@ def pages():
         {"Values": [
             colonne("dim_ligne", "libelle"), colonne("fait_passage", "heure_prevue"),
             mesure("fait_passage", "Passages"), mesure("fait_passage", "Ponctualité des passages"),
-            mesure("fait_passage", "Retard moyen des passages (min)"), mesure("fait_passage", "Retard P90 (min)"),
+            mesure("fait_passage", "Retard moyen des passages (min)"), mesure("fait_passage", "Retard P90 par horaire (min)"),
             mesure("fait_passage", "Passages supprimés"),
         ]},
-        "Chaque horaire à l'arrivée, avec sa fiabilité",
+        "Chaque horaire à l'arrivée, avec sa fiabilité (le retard P90 s'affiche une fois la gare choisie)",
         tri=(colonne("fait_passage", "heure_prevue"), "Ascending"),
     )
     # Page 4 : la météo du matin explique-t-elle les retards ?
@@ -272,8 +290,10 @@ def pages():
         "Chaque jour : précipitations du matin et retard à l'arrivée",
     )
     # Page 5 : le risque de demain, et ce que vaut le modèle
-    demain = Page("demain", "Demain")
-    demain.segment(MARGE, MARGE, 400, 60, colonne("prediction", "jour_cible"), "Jour prédit")
+    # Filtre de page : seule la prévision la plus récente (celle du prochain trajet). L'historique reste accessible
+    # en modifiant ce filtre dans le volet Filtres. Le segment en liste affiche donc le jour prédit en clair.
+    demain = Page("demain", "Demain", filtres=[filtre_egal("prediction", "derniere_prevision", "true")])
+    demain.segment(MARGE, MARGE, 400, 60, colonne("prediction", "jour_cible"), "Jour prédit", mode="Basic")
     demain.cartes(
         100,
         [

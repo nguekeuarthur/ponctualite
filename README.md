@@ -178,6 +178,16 @@ Après la création de nouvelles tables dans le lakehouse, forcer la synchronisa
 ne voit pas les tables. Dans le rapport, la mise en forme conditionnelle des matrices exige un sélecteur à deux clés
 (`dataViewWildcard` + `metadata`), sans quoi elle est ignorée en silence.
 
+Deux pièges rencontrés avec 16 mois d'historique, corrigés le 17.11.2026 :
+
+- **Centile et limite de mémoire.** `PERCENTILE.INC` et `PERCENTILEX.INC` matérialisent chaque ligne : sur 13 millions de
+  passages, la requête dépasse la limite de 1'024 Mo de la capacité d'essai et le visuel échoue. La mesure
+  `Retard P90 (min)` lit désormais l'histogramme des retards (2'500 valeurs distinctes et leurs effectifs), pour le
+  même résultat en quelques secondes.
+- **Clé de dimension et casse.** Spark distingue deux graphies d'un même nom d'arrêt, Power BI non : la dimension
+  contenait alors un doublon de clé, et choisir une gare dans un segment faisait échouer la relation.
+  `Transformer_Passages` construit `dim_arret` sur le nom normalisé (minuscules, espaces réduits).
+
 ```powershell
 # 6. Tableau de bord temps réel (Real-Time Dashboard sur l'Eventhouse), généré par script
 python .\ponctualite\temps_reel\generer_tableau_de_bord.py
@@ -207,14 +217,16 @@ Cinq pages, en Direct Lake sur le modèle gold :
 
 1. **Mes trajets** : ponctualité, retard moyen et maximal, jours à plus de 3 minutes, suppressions, minutes perdues ;
    retard jour par jour, ponctualité selon le jour de la semaine, liste des pires jours.
-2. **Lignes et gares** : les 13,75 millions de passages du périmètre (90 lignes, 445 arrêts) ; ponctualité par ligne,
+2. **Lignes et gares** : les 13,75 millions de passages du périmètre (90 lignes, 443 arrêts) ; ponctualité par ligne,
    retard selon l'heure de la journée, matrice ligne × jour de la semaine colorée du rouge au vert.
 3. **Alternatives** : pour une gare d'arrivée, la ponctualité de chaque ligne heure par heure, puis chaque horaire avec
-   sa fiabilité : de quoi choisir le train à prendre plutôt que celui qu'on a l'habitude de prendre.
+   sa fiabilité : de quoi choisir le train à prendre plutôt que celui qu'on a l'habitude de prendre. Le retard au
+   90e centile de chaque horaire s'affiche une fois la gare choisie.
 4. **Météo** : ponctualité et retard selon les conditions du matin, et deux nuages de points (température minimale,
    précipitations) jour par jour.
 5. **Demain** : le risque de retard de chaque trajet pour le prochain jour ouvré, avec la météo prévue, l'importance des
-   variables et l'évaluation du modèle.
+   variables et l'évaluation du modèle. Un filtre de page ne garde que la prévision la plus récente (colonne
+   `derniere_prevision` de `gold.prediction`) ; l'historique reste accessible en modifiant ce filtre.
 
 ## La prédiction
 

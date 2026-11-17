@@ -247,8 +247,14 @@ print(prediction[["trajet", "probabilite_retard", "niveau", "taux_historique", "
 # Historique des prédictions : une seule ligne par (jour cible, trajet), la plus récente l'emporte
 nouvelle = spark.createDataFrame(prediction)
 if spark.catalog.tableExists("gold.prediction"):
-    ancienne = spark.table("gold.prediction").join(nouvelle.select("jour_cible", "trajet"), ["jour_cible", "trajet"], "left_anti")
+    ancienne = (
+        spark.table("gold.prediction").drop("derniere_prevision")
+        .join(nouvelle.select("jour_cible", "trajet"), ["jour_cible", "trajet"], "left_anti")
+    )
     nouvelle = ancienne.unionByName(nouvelle, allowMissingColumns=True)
+# La page « Demain » du rapport n'affiche par défaut que la prévision la plus récente : on la marque ici
+dernier_jour = nouvelle.agg(F.max("jour_cible")).first()[0]
+nouvelle = nouvelle.withColumn("derniere_prevision", F.col("jour_cible") == F.lit(dernier_jour))
 ecrire(nouvelle, "gold.prediction")
 
 # METADATA ********************
