@@ -1,0 +1,97 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "porte_07",
+  "position": {
+    "x": 640,
+    "y": 475,
+    "z": 7,
+    "width": 620,
+    "height": 225,
+    "tabOrder": 7
+  },
+  "visual": {
+    "visualType": "clusteredColumnChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_correspondance"
+                    }
+                  },
+                  "Property": "marge_reelle_arrondie"
+                }
+              },
+              "queryRef": "fait_correspondance.marge_reelle_arrondie",
+              "nativeQueryRef": "marge_reelle_arrondie",
+              "active": true
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_correspondance"
+                    }
+                  },
+                  "Property": "correspondance"
+                }
+              },
+              "queryRef": "fait_correspondance.correspondance",
+              "nativeQueryRef": "correspondance"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_correspondance"
+                    }
+                  },
+                  "Property": "Correspondances"
+                }
+              },
+              "queryRef": "fait_correspondance.Correspondances",
+              "nativeQueryRef": "Correspondances"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Marge réelle à chaque correspondance, en minutes'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

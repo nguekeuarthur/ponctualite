@@ -1,0 +1,146 @@
+/// Un itinéraire porte à porte par jour : les trajets suivis enchaînés, correspondances comprises (Transformer_Passages)
+table fait_itineraire
+
+	measure 'Voyages' = COUNTROWS(fait_itineraire)
+		formatString: #,0
+
+	measure 'Voyages comme prévu' = CALCULATE(COUNTROWS(fait_itineraire), fait_itineraire[statut] = "comme prévu")
+		formatString: #,0
+
+	measure 'Part des voyages comme prévu' = DIVIDE([Voyages comme prévu], [Voyages])
+		formatString: 0 %
+
+	measure 'Voyages avec correspondance manquée' = CALCULATE(COUNTROWS(fait_itineraire), fait_itineraire[correspondances_manquees] > 0)
+		formatString: #,0
+
+	/// Part des voyages où au moins une correspondance n'a pas pu être prise comme prévu
+	measure 'Taux de correspondance manquée' = DIVIDE([Voyages avec correspondance manquée], [Voyages])
+		formatString: 0 %
+
+	/// Part des voyages arrivés avant l'heure objectif de l'itinéraire, toutes étapes enchaînées
+	measure 'Arrivées avant l''objectif, porte à porte' =
+			DIVIDE(
+			    CALCULATE(COUNTROWS(fait_itineraire), fait_itineraire[arrive_avant_objectif] = TRUE()),
+			    CALCULATE(COUNTROWS(fait_itineraire), NOT ISBLANK(fait_itineraire[arrive_avant_objectif]))
+			)
+		formatString: 0 %
+
+	measure 'Voyages arrivés après l''objectif' = CALCULATE(COUNTROWS(fait_itineraire), fait_itineraire[arrive_avant_objectif] = FALSE())
+		formatString: #,0
+
+	measure 'Retard porte à porte moyen (min)' = AVERAGE(fait_itineraire[retard_min])
+		formatString: 0.0
+
+	measure 'Retard porte à porte max (min)' = MAX(fait_itineraire[retard_min])
+		formatString: 0.0
+
+	measure 'Durée réelle moyenne (min)' = AVERAGE(fait_itineraire[duree_reelle_min])
+		formatString: 0
+
+	measure 'Durée prévue moyenne (min)' = AVERAGE(fait_itineraire[duree_prevue_min])
+		formatString: 0
+
+	column jour
+		dataType: dateTime
+		formatString: dd.MM.yyyy
+		summarizeBy: none
+		sourceColumn: jour
+
+	column itineraire
+		dataType: string
+		summarizeBy: none
+		sourceColumn: itineraire
+
+	column nb_etapes
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: nb_etapes
+
+	column depart_prevu
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm
+		summarizeBy: none
+		sourceColumn: depart_prevu
+
+	column arrivee_prevue
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm
+		summarizeBy: none
+		sourceColumn: arrivee_prevue
+
+	column arrivee_reelle
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm:ss
+		summarizeBy: none
+		sourceColumn: arrivee_reelle
+
+	column lignes_prises
+		dataType: string
+		summarizeBy: none
+		sourceColumn: lignes_prises
+
+	column correspondances_manquees
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: correspondances_manquees
+
+	column statut
+		dataType: string
+		summarizeBy: none
+		sourceColumn: statut
+
+	column mesure_complete
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: mesure_complete
+
+	column retard_min
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: retard_min
+
+	column duree_prevue_min
+		dataType: double
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: duree_prevue_min
+
+	column duree_reelle_min
+		dataType: double
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: duree_reelle_min
+
+	column objectif_arrivee
+		dataType: string
+		summarizeBy: none
+		sourceColumn: objectif_arrivee
+
+	column arrive_avant_objectif
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: arrive_avant_objectif
+
+	column nom_jour
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: nom_jour
+
+	column jour_ouvre
+		dataType: boolean
+		isHidden
+		summarizeBy: none
+		sourceColumn: jour_ouvre
+
+	partition fait_itineraire = entity
+		mode: directLake
+		source
+			entityName: fait_itineraire
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

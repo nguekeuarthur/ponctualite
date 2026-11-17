@@ -31,6 +31,8 @@ Lakehouse Ponctualite
    gold.dim_date / dim_ligne / dim_arret
    gold.fait_passage      un passage à un arrêt
    gold.fait_trajet       un trajet suivi par jour : « mon train de 07:55 », avec son retard réel à l'arrivée
+   gold.fait_itineraire   un voyage porte à porte par jour : les trajets suivis enchaînés, correspondances comprises
+   gold.fait_correspondance   une correspondance par jour : marge prévue, marge réelle, tenue ou manquée
         │
         ▼
 Power BI (Direct Lake) : fiabilité par trajet, par jour de semaine, par heure ; meilleure alternative
@@ -91,8 +93,38 @@ La pluie du matin coûte quinze points de ponctualité, le gel presque rien :
 
 Les matins de vent fort (31 trajets) et de neige au sol (7) sont trop rares pour conclure.
 
-Limite connue : chaque étape est mesurée seule, à son heure habituelle. Une correspondance manquée à cause du retard
-de l'étape précédente n'est pas encore comptée.
+### Porte à porte : ce que coûtent les correspondances
+
+Mesurer chaque étape seule ne dit pas si j'arrive à l'heure. Les trajets sont donc enchaînés en itinéraires, et le
+voyageur est simulé jour après jour : il vise la course prévue, la prend si elle est encore à quai quand il arrive
+réellement, et sinon monte dans le premier véhicule qui relie les deux arrêts, quelle que soit sa ligne.
+Résultats du 15.12.2025 au 16.11.2026, jours ouvrés où toutes les heures utiles ont été mesurées :
+
+| Itinéraire | Voyages | Comme prévu | Correspondance manquée | Arrivé avant l'heure objectif | Retard moyen | Pire jour |
+|---|---|---|---|---|---|---|
+| A : bus urbain, InterRegio, bus urbain | 226 | 84 % | 15 % | 77 % | +3,8 min | +37 min |
+| B : bus régional, train régional, bus urbain | 221 | 73 % | 27 % | 99,5 % | +5,9 min | +48 min |
+
+| Correspondance | Marge prévue | Minimum supposé | Tenue |
+|---|---|---|---|
+| A, du bus urbain à l'InterRegio | 8 min | 5 min | 85 % |
+| A, de l'InterRegio au bus urbain | 12 min | 3 min | 98 % |
+| B, du bus régional au train régional | 19 min | 2 min | 99 % |
+| B, du train régional au bus urbain | 5 min | 3 min | 73 % |
+
+Deux leçons que les mesures par étape ne montraient pas :
+
+- **L'itinéraire qui rate le plus de correspondances est le plus sûr.** Sur B, une correspondance sur quatre est
+  manquée, toujours la même : le bus part quatre à cinq minutes après l'arrivée prévue du train. Mais le bus suivant
+  passe un quart d'heure plus tard et l'horaire prévu garde une demi-heure de réserve : un seul voyage sur 221 arrive
+  après l'heure objectif.
+- **L'itinéraire qui tient ses correspondances arrive le plus souvent en retard.** Sur A, l'horaire prévu n'arrive que
+  cinq minutes avant l'heure objectif : le moindre écart suffit, et près d'un voyage sur quatre arrive trop tard.
+
+Les délais de correspondance sont des hypothèses (clé `correspondance_min` de la configuration), et le résultat y est
+sensible : la page « Porte à porte » du rapport montre la marge réelle de chaque correspondance, minute par minute.
+Autres hypothèses : un véhicule ne part pas avant son heure prévue, et le voyageur ne prend pas de course plus tôt
+que prévu.
 
 Un trajet suivi est défini par un arrêt de départ, une ligne et une heure habituelle ; la course retenue chaque jour
 est la première de la ligne à partir de cette heure (tolérance de 10 minutes), ce qui absorbe les horaires de vacances
@@ -100,7 +132,8 @@ décalés de quelques minutes. Un passage est ponctuel si son retard à l'arriv�
 
 ## Confidentialité
 
-Le périmètre (arrêts, lignes, trajets suivis) est décrit dans `config/trajets.json`, **qui n'est pas publié** :
+Le périmètre (arrêts, lignes, trajets suivis, itinéraires qui les enchaînent) est décrit dans `config/trajets.json`,
+**qui n'est pas publié** :
 il contient mes arrêts de domicile et mes horaires. `config/trajets.exemple.json` montre le format ;
 copie-le en `trajets.json` et mets tes propres trajets. La clé OJP est dans `.env` (non publié), copiée dans le
 lakehouse sous `Files/config/ojp.env` ; elle n'apparaît ni dans le code, ni dans les sorties des scripts.
@@ -144,7 +177,11 @@ La capacité d'essai n'exécute qu'un travail Spark à la fois : attendre la fin
 
 Chaîne quotidienne planifiée dans Fabric (heure suisse) : `Charger_Istdaten` à 06:00, `Charger_Meteo` à 06:15,
 `Transformer_Passages` à 06:30, et `Predire_Retards` à 20:00 pour le lendemain. Le collecteur temps réel tourne toutes
-les 5 minutes. Attention : un gros travail Spark (rechargement d'archives) sature la capacité d'essai, fait échouer les
+les 5 minutes. Les étapes facultatives de la transformation (itinéraires, prévisions jugées) ne l'arrêtent jamais :
+en cas d'erreur, la trace complète est écrite dans `Files/journal/<étape>.txt` du lakehouse.
+La capacité d'essai ne sert qu'un travail à la fois : pendant chaque travail Spark de la chaîne, le relevé du
+collecteur échoue (erreur 430), soit trois à cinq relevés perdus par jour sur 288.
+Attention : un gros travail Spark (rechargement d'archives) sature la capacité d'essai, fait échouer les
 exécutions planifiées et Fabric suspend alors la planification après quelques échecs ; la réactiver avec
 `fab job run-update <notebook> --id <planification> --enable`.
 Les fichiers des archives s'appellent `AAAA-MM-JJ_IstDaten.csv` (majuscules) alors que les quotidiens en ligne
@@ -213,22 +250,25 @@ attendus chaque jour, sans interruption depuis le premier après-midi.
 
 ## Le rapport
 
-Six pages, en Direct Lake sur le modèle gold :
+Sept pages, en Direct Lake sur le modèle gold :
 
 1. **Mes trajets** : ponctualité, retard moyen et maximal, jours à plus de 3 minutes, suppressions, minutes perdues ;
    retard jour par jour, ponctualité selon le jour de la semaine, liste des pires jours. Le segment « Jour ouvré »
    écarte les week-ends, où les trains sont nettement plus souvent supprimés.
-2. **Lignes et gares** : les 13,75 millions de passages du périmètre (90 lignes, 443 arrêts) ; ponctualité par ligne,
+2. **Porte à porte** : les itinéraires complets, correspondances comprises. Part des voyages comme prévu, taux de
+   correspondance manquée, arrivées avant l'heure objectif, retard et durée porte à porte ; évolution mois après
+   mois ; pour chaque correspondance, la marge prévue, le minimum nécessaire et la répartition des marges réelles.
+3. **Lignes et gares** : les 13,75 millions de passages du périmètre (90 lignes, 443 arrêts) ; ponctualité par ligne,
    retard selon l'heure de la journée, matrice ligne × jour de la semaine colorée du rouge au vert.
-3. **Alternatives** : pour une gare d'arrivée, la ponctualité de chaque ligne heure par heure, puis chaque horaire avec
+4. **Alternatives** : pour une gare d'arrivée, la ponctualité de chaque ligne heure par heure, puis chaque horaire avec
    sa fiabilité : de quoi choisir le train à prendre plutôt que celui qu'on a l'habitude de prendre. Le retard au
    90e centile de chaque horaire s'affiche une fois la gare choisie.
-4. **Météo** : ponctualité et retard selon les conditions du matin, et deux nuages de points (température minimale,
+5. **Météo** : ponctualité et retard selon les conditions du matin, et deux nuages de points (température minimale,
    précipitations) jour par jour.
-5. **Demain** : le risque de retard de chaque trajet pour le prochain jour ouvré, avec la météo prévue, l'importance des
+6. **Demain** : le risque de retard de chaque trajet pour le prochain jour ouvré, avec la météo prévue, l'importance des
    variables et l'évaluation du modèle. Un filtre de page ne garde que la prévision la plus récente (colonne
    `derniere_prevision` de `gold.prediction`) ; l'historique reste accessible en modifiant ce filtre.
-6. **Prévisions contre réalité** : chaque prévision passée rapprochée du trajet réel. Risque annoncé et retards réels
+7. **Prévisions contre réalité** : chaque prévision passée rapprochée du trajet réel. Risque annoncé et retards réels
    par niveau (la calibration) et jour après jour, précision et couverture des alertes « élevé », score de Brier face
    à la référence naïve, et le détail prévision par prévision : alerte justifiée, fausse alerte, retard non annoncé
    ou calme confirmé.
@@ -293,7 +333,7 @@ ponctualite/
 │   └── Collecter_Temps_Reel.Notebook/   relevé OJP → Eventhouse (Python)
 ├── rapport/
 │   ├── Ponctualite.SemanticModel/     modèle Direct Lake (TMDL) : tables, relations, mesures
-│   ├── generer_rapport.py             génère le rapport PBIR (6 pages, 69 visuels)
+│   ├── generer_rapport.py             génère le rapport PBIR (7 pages, 77 visuels)
 │   ├── verifier.py                    exécute une requête DAX sur le modèle
 │   └── theme/                         thème Power BI de base
 ├── temps_reel/

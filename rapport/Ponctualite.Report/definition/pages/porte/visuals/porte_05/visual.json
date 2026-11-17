@@ -1,0 +1,97 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "porte_05",
+  "position": {
+    "x": 640,
+    "y": 240,
+    "z": 5,
+    "width": 620,
+    "height": 220,
+    "tabOrder": 5
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_date"
+                    }
+                  },
+                  "Property": "debut_mois"
+                }
+              },
+              "queryRef": "dim_date.debut_mois",
+              "nativeQueryRef": "debut_mois",
+              "active": true
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "itineraire"
+                }
+              },
+              "queryRef": "fait_itineraire.itineraire",
+              "nativeQueryRef": "itineraire"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Taux de correspondance manquée"
+                }
+              },
+              "queryRef": "fait_itineraire.Taux de correspondance manquée",
+              "nativeQueryRef": "Taux de correspondance manquée"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Voyages avec une correspondance manquée, mois après mois'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

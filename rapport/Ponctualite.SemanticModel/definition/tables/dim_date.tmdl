@@ -27,6 +27,12 @@ table dim_date
 		sourceColumn: nom_mois
 		sortByColumn: mois
 
+	column debut_mois
+		dataType: dateTime
+		formatString: MM.yyyy
+		summarizeBy: none
+		sourceColumn: debut_mois
+
 	column semaine_iso
 		dataType: int64
 		formatString: 0

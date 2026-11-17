@@ -1,0 +1,144 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "porte_06",
+  "position": {
+    "x": 20,
+    "y": 475,
+    "z": 6,
+    "width": 600,
+    "height": 225,
+    "tabOrder": 6
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_correspondance"
+                    }
+                  },
+                  "Property": "correspondance"
+                }
+              },
+              "queryRef": "fait_correspondance.correspondance",
+              "nativeQueryRef": "correspondance"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_correspondance"
+                    }
+                  },
+                  "Property": "Correspondances"
+                }
+              },
+              "queryRef": "fait_correspondance.Correspondances",
+              "nativeQueryRef": "Correspondances"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_correspondance"
+                    }
+                  },
+                  "Property": "Part des correspondances tenues"
+                }
+              },
+              "queryRef": "fait_correspondance.Part des correspondances tenues",
+              "nativeQueryRef": "Part des correspondances tenues"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_correspondance"
+                    }
+                  },
+                  "Property": "Marge prévue (min)"
+                }
+              },
+              "queryRef": "fait_correspondance.Marge prévue (min)",
+              "nativeQueryRef": "Marge prévue (min)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_correspondance"
+                    }
+                  },
+                  "Property": "Minimum nécessaire (min)"
+                }
+              },
+              "queryRef": "fait_correspondance.Minimum nécessaire (min)",
+              "nativeQueryRef": "Minimum nécessaire (min)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_correspondance"
+                    }
+                  },
+                  "Property": "Marge réelle moyenne (min)"
+                }
+              },
+              "queryRef": "fait_correspondance.Marge réelle moyenne (min)",
+              "nativeQueryRef": "Marge réelle moyenne (min)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_correspondance"
+                    }
+                  },
+                  "Property": "Attente supplémentaire médiane (min)"
+                }
+              },
+              "queryRef": "fait_correspondance.Attente supplémentaire médiane (min)",
+              "nativeQueryRef": "Attente supplémentaire médiane (min)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Chaque correspondance : la marge prévue, le minimum nécessaire et la marge réelle'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

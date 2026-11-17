@@ -1,0 +1,146 @@
+/// Une correspondance par jour et par itinéraire : la marge réelle entre l'arrivée et le départ de la course prévue
+table fait_correspondance
+
+	measure 'Correspondances' = COUNTROWS(fait_correspondance)
+		formatString: #,0
+
+	measure 'Correspondances tenues' = CALCULATE(COUNTROWS(fait_correspondance), fait_correspondance[tenue] = TRUE())
+		formatString: #,0
+
+	measure 'Part des correspondances tenues' = DIVIDE([Correspondances tenues], [Correspondances])
+		formatString: 0 %
+
+	measure 'Correspondances manquées' = CALCULATE(COUNTROWS(fait_correspondance), fait_correspondance[tenue] = FALSE())
+		formatString: #,0
+
+	/// Minutes entre l'arrivée réelle et le départ réel de la course prévue ; en dessous du minimum, la correspondance est manquée
+	measure 'Marge réelle moyenne (min)' = AVERAGE(fait_correspondance[marge_reelle_min])
+		formatString: 0.0
+
+	measure 'Marge prévue (min)' = AVERAGE(fait_correspondance[marge_prevue_min])
+		formatString: 0.0
+
+	measure 'Minimum nécessaire (min)' = AVERAGE(fait_correspondance[minimum_min])
+		formatString: 0
+
+	/// Attente de plus, en minutes d'horaire, quand il faut prendre une course suivante. Médiane et non moyenne :
+	/// un jour de ligne interrompue, sans véhicule avant des heures, fausserait la moyenne.
+	measure 'Attente supplémentaire médiane (min)' =
+			CALCULATE(MEDIAN(fait_correspondance[attente_supplementaire_min]), fait_correspondance[tenue] = FALSE())
+		formatString: 0
+
+	column jour
+		dataType: dateTime
+		formatString: dd.MM.yyyy
+		summarizeBy: none
+		sourceColumn: jour
+
+	column itineraire
+		dataType: string
+		summarizeBy: none
+		sourceColumn: itineraire
+
+	column rang
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: rang
+
+	column correspondance
+		dataType: string
+		summarizeBy: none
+		sourceColumn: correspondance
+
+	column arret
+		dataType: string
+		summarizeBy: none
+		sourceColumn: arret
+
+	column minimum_min
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: minimum_min
+
+	column arrivee_reelle_amont
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm:ss
+		summarizeBy: none
+		sourceColumn: arrivee_reelle_amont
+
+	column depart_prevu
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm
+		summarizeBy: none
+		sourceColumn: depart_prevu
+
+	column depart_reel
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm:ss
+		summarizeBy: none
+		sourceColumn: depart_reel
+
+	column marge_prevue_min
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: marge_prevue_min
+
+	column marge_reelle_min
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: marge_reelle_min
+
+	column marge_reelle_arrondie
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: marge_reelle_arrondie
+
+	column tenue
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: tenue
+
+	column cause
+		dataType: string
+		summarizeBy: none
+		sourceColumn: cause
+
+	column ligne_prise
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ligne_prise
+
+	column attente_supplementaire_min
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: attente_supplementaire_min
+
+	column mesure_complete
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: mesure_complete
+
+	column nom_jour
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: nom_jour
+
+	column jour_ouvre
+		dataType: boolean
+		isHidden
+		summarizeBy: none
+		sourceColumn: jour_ouvre
+
+	partition fait_correspondance = entity
+		mode: directLake
+		source
+			entityName: fait_correspondance
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

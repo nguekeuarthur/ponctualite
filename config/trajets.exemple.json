@@ -15,7 +15,8 @@
   },
   "lignes": [
     {"operateur": "SBB", "ligne": "IC1"},
-    {"operateur": "SBB", "ligne": "IR15"}
+    {"operateur": "SBB", "ligne": "IR15"},
+    {"operateur": "SBB", "ligne": "IC8"}
   ],
   "trajets": [
     {
@@ -26,6 +27,25 @@
       "depart": "Lausanne",
       "heure_depart": "07:20",
       "arrivee": "Bern"
+    },
+    {
+      "nom": "Berne → Zurich",
+      "jours": "lun-ven",
+      "operateur": "SBB",
+      "ligne": "IC8",
+      "depart": "Bern",
+      "heure_depart": "08:32",
+      "arrivee": "Zürich HB"
+    }
+  ],
+  "_note_itineraires": "Un itinéraire enchaîne des trajets, désignés par leur nom. correspondance_min : minutes nécessaires à chaque changement, une valeur par correspondance.",
+  "itineraires": [
+    {
+      "nom": "Lausanne → Zurich par Berne",
+      "jours": "lun-ven",
+      "objectif_arrivee": "10:00",
+      "etapes": ["Lausanne → Berne", "Berne → Zurich"],
+      "correspondance_min": [5]
     }
   ]
 }

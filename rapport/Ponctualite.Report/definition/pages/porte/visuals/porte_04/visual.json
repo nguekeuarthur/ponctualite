@@ -1,0 +1,97 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "porte_04",
+  "position": {
+    "x": 20,
+    "y": 240,
+    "z": 4,
+    "width": 600,
+    "height": 220,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "statut"
+                }
+              },
+              "queryRef": "fait_itineraire.statut",
+              "nativeQueryRef": "statut",
+              "active": true
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "itineraire"
+                }
+              },
+              "queryRef": "fait_itineraire.itineraire",
+              "nativeQueryRef": "itineraire"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Voyages"
+                }
+              },
+              "queryRef": "fait_itineraire.Voyages",
+              "nativeQueryRef": "Voyages"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Comment se passent les voyages'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

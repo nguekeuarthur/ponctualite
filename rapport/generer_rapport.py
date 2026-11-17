@@ -194,7 +194,57 @@ def pages():
         tri=(mesure("fait_trajet", "Retard moyen (min)"), "Descending"),
     )
 
-    # Page 2 : lignes et gares (tous les passages du périmètre)
+    # Page 2 : les itinéraires porte à porte, correspondances comprises
+    # Filtres de page : jours ouvrés, et seulement les jours où toutes les heures utiles ont été mesurées.
+    porte = Page("porte", "Porte à porte", filtres=[
+        filtre_egal("dim_date", "jour_ouvre", "true"),
+        filtre_egal("fait_itineraire", "mesure_complete", "true"),
+        filtre_egal("fait_correspondance", "mesure_complete", "true"),
+    ])
+    porte.segment(MARGE, MARGE, 400, 60, colonne("dim_date", "annee"), "Année")
+    porte.segment(440, MARGE, 400, 60, colonne("dim_date", "nom_mois"), "Mois")
+    porte.segment(860, MARGE, 400, 60, colonne("fait_itineraire", "statut"), "Déroulement du voyage")
+    porte.visuel(
+        "tableEx", MARGE, 100, 1240, 125,
+        {"Values": [
+            colonne("fait_itineraire", "itineraire"), mesure("fait_itineraire", "Voyages"),
+            mesure("fait_itineraire", "Part des voyages comme prévu"), mesure("fait_itineraire", "Taux de correspondance manquée"),
+            mesure("fait_itineraire", "Arrivées avant l'objectif, porte à porte"), mesure("fait_itineraire", "Voyages arrivés après l'objectif"),
+            mesure("fait_itineraire", "Retard porte à porte moyen (min)"), mesure("fait_itineraire", "Retard porte à porte max (min)"),
+            mesure("fait_itineraire", "Durée prévue moyenne (min)"), mesure("fait_itineraire", "Durée réelle moyenne (min)"),
+        ]},
+        "Bilan de chaque itinéraire, toutes étapes enchaînées",
+    )
+    porte.visuel(
+        "clusteredBarChart", MARGE, 240, 600, 220,
+        {"Category": [colonne("fait_itineraire", "statut")], "Series": [colonne("fait_itineraire", "itineraire")],
+         "Y": [mesure("fait_itineraire", "Voyages")]},
+        "Comment se passent les voyages",
+    )
+    porte.visuel(
+        "lineChart", 640, 240, 620, 220,
+        {"Category": [colonne("dim_date", "debut_mois")], "Series": [colonne("fait_itineraire", "itineraire")],
+         "Y": [mesure("fait_itineraire", "Taux de correspondance manquée")]},
+        "Voyages avec une correspondance manquée, mois après mois",
+    )
+    porte.visuel(
+        "tableEx", MARGE, 475, 600, 225,
+        {"Values": [
+            colonne("fait_correspondance", "correspondance"), mesure("fait_correspondance", "Correspondances"),
+            mesure("fait_correspondance", "Part des correspondances tenues"), mesure("fait_correspondance", "Marge prévue (min)"),
+            mesure("fait_correspondance", "Minimum nécessaire (min)"), mesure("fait_correspondance", "Marge réelle moyenne (min)"),
+            mesure("fait_correspondance", "Attente supplémentaire médiane (min)"),
+        ]},
+        "Chaque correspondance : la marge prévue, le minimum nécessaire et la marge réelle",
+    )
+    porte.visuel(
+        "clusteredColumnChart", 640, 475, 620, 225,
+        {"Category": [colonne("fait_correspondance", "marge_reelle_arrondie")], "Series": [colonne("fait_correspondance", "correspondance")],
+         "Y": [mesure("fait_correspondance", "Correspondances")]},
+        "Marge réelle à chaque correspondance, en minutes",
+    )
+
+    # Page 3 : lignes et gares (tous les passages du périmètre)
     lignes = Page("lignes", "Lignes et gares")
     lignes.segment(MARGE, MARGE, 400, 60, colonne("dim_ligne", "libelle"), "Ligne")
     lignes.segment(440, MARGE, 400, 60, colonne("dim_arret", "arret"), "Gare ou arrêt")
@@ -228,7 +278,7 @@ def pages():
         objets=fond_degrade(mesure("fait_passage", "Ponctualité des passages")),
     )
 
-    # Page 3 : quelle alternative prendre
+    # Page 4 : quelle alternative prendre
     alternatives = Page("alternatives", "Alternatives")
     alternatives.segment(MARGE, MARGE, 400, 60, colonne("dim_arret", "arret"), "Gare d'arrivée")
     alternatives.segment(440, MARGE, 400, 60, colonne("dim_ligne", "libelle"), "Ligne")
@@ -251,7 +301,7 @@ def pages():
         "Chaque horaire à l'arrivée, avec sa fiabilité (le retard P90 s'affiche une fois la gare choisie)",
         tri=(colonne("fait_passage", "heure_prevue"), "Ascending"),
     )
-    # Page 4 : la météo du matin explique-t-elle les retards ?
+    # Page 5 : la météo du matin explique-t-elle les retards ?
     meteo = Page("meteo", "Météo")
     meteo.segment(MARGE, MARGE, 400, 60, colonne("fait_trajet", "trajet"), "Trajet")
     meteo.segment(440, MARGE, 400, 60, colonne("fait_trajet", "conditions_matin"), "Conditions du matin")
@@ -290,7 +340,7 @@ def pages():
          "Y": [mesure("fait_trajet", "Retard moyen (min)")], "Series": [colonne("fait_trajet", "trajet")]},
         "Chaque jour : précipitations du matin et retard à l'arrivée",
     )
-    # Page 5 : le risque de demain, et ce que vaut le modèle
+    # Page 6 : le risque de demain, et ce que vaut le modèle
     # Filtre de page : seule la prévision la plus récente (celle du prochain trajet). L'historique reste accessible
     # en modifiant ce filtre dans le volet Filtres. Le segment en liste affiche donc le jour prédit en clair.
     demain = Page("demain", "Demain", filtres=[filtre_egal("prediction", "derniere_prevision", "true")])
@@ -340,7 +390,7 @@ def pages():
         ]},
         "Évaluation : apprentissage sur le passé, test sur les derniers jours",
     )
-    # Page 6 : les prévisions passées face à ce qui s'est réellement produit
+    # Page 7 : les prévisions passées face à ce qui s'est réellement produit
     jugement = Page("jugement", "Prévisions contre réalité")
     jugement.segment(MARGE, MARGE, 400, 60, colonne("prediction_jugee", "trajet"), "Trajet")
     jugement.segment(440, MARGE, 400, 60, colonne("prediction_jugee", "niveau"), "Niveau annoncé")
@@ -386,7 +436,7 @@ def pages():
         "Chaque prévision et son issue",
         tri=(colonne("prediction_jugee", "jour_cible"), "Descending"),
     )
-    return [trajets, lignes, alternatives, meteo, demain, jugement]
+    return [trajets, porte, lignes, alternatives, meteo, demain, jugement]
 
 
 def main():

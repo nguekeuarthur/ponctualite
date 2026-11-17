@@ -1,0 +1,186 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "porte_03",
+  "position": {
+    "x": 20,
+    "y": 100,
+    "z": 3,
+    "width": 1240,
+    "height": 125,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "itineraire"
+                }
+              },
+              "queryRef": "fait_itineraire.itineraire",
+              "nativeQueryRef": "itineraire"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Voyages"
+                }
+              },
+              "queryRef": "fait_itineraire.Voyages",
+              "nativeQueryRef": "Voyages"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Part des voyages comme prévu"
+                }
+              },
+              "queryRef": "fait_itineraire.Part des voyages comme prévu",
+              "nativeQueryRef": "Part des voyages comme prévu"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Taux de correspondance manquée"
+                }
+              },
+              "queryRef": "fait_itineraire.Taux de correspondance manquée",
+              "nativeQueryRef": "Taux de correspondance manquée"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Arrivées avant l'objectif, porte à porte"
+                }
+              },
+              "queryRef": "fait_itineraire.Arrivées avant l'objectif, porte à porte",
+              "nativeQueryRef": "Arrivées avant l'objectif, porte à porte"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Voyages arrivés après l'objectif"
+                }
+              },
+              "queryRef": "fait_itineraire.Voyages arrivés après l'objectif",
+              "nativeQueryRef": "Voyages arrivés après l'objectif"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Retard porte à porte moyen (min)"
+                }
+              },
+              "queryRef": "fait_itineraire.Retard porte à porte moyen (min)",
+              "nativeQueryRef": "Retard porte à porte moyen (min)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Retard porte à porte max (min)"
+                }
+              },
+              "queryRef": "fait_itineraire.Retard porte à porte max (min)",
+              "nativeQueryRef": "Retard porte à porte max (min)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Durée prévue moyenne (min)"
+                }
+              },
+              "queryRef": "fait_itineraire.Durée prévue moyenne (min)",
+              "nativeQueryRef": "Durée prévue moyenne (min)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fait_itineraire"
+                    }
+                  },
+                  "Property": "Durée réelle moyenne (min)"
+                }
+              },
+              "queryRef": "fait_itineraire.Durée réelle moyenne (min)",
+              "nativeQueryRef": "Durée réelle moyenne (min)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Bilan de chaque itinéraire, toutes étapes enchaînées'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
