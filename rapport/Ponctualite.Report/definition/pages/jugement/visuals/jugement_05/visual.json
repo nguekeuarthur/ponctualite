@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "jugement_05",
+  "position": {
+    "x": 332,
+    "y": 100,
+    "z": 5,
+    "width": 146,
+    "height": 100,
+    "tabOrder": 5
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "Risque moyen annoncé"
+                }
+              },
+              "queryRef": "prediction_jugee.Risque moyen annoncé",
+              "nativeQueryRef": "Risque moyen annoncé"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

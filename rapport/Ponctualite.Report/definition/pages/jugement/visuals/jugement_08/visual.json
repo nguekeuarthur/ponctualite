@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "jugement_08",
+  "position": {
+    "x": 800,
+    "y": 100,
+    "z": 8,
+    "width": 146,
+    "height": 100,
+    "tabOrder": 8
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "Retards annoncés"
+                }
+              },
+              "queryRef": "prediction_jugee.Retards annoncés",
+              "nativeQueryRef": "Retards annoncés"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

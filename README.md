@@ -213,7 +213,7 @@ attendus chaque jour, sans interruption depuis le premier après-midi.
 
 ## Le rapport
 
-Cinq pages, en Direct Lake sur le modèle gold :
+Six pages, en Direct Lake sur le modèle gold :
 
 1. **Mes trajets** : ponctualité, retard moyen et maximal, jours à plus de 3 minutes, suppressions, minutes perdues ;
    retard jour par jour, ponctualité selon le jour de la semaine, liste des pires jours. Le segment « Jour ouvré »
@@ -228,6 +228,10 @@ Cinq pages, en Direct Lake sur le modèle gold :
 5. **Demain** : le risque de retard de chaque trajet pour le prochain jour ouvré, avec la météo prévue, l'importance des
    variables et l'évaluation du modèle. Un filtre de page ne garde que la prévision la plus récente (colonne
    `derniere_prevision` de `gold.prediction`) ; l'historique reste accessible en modifiant ce filtre.
+6. **Prévisions contre réalité** : chaque prévision passée rapprochée du trajet réel. Risque annoncé et retards réels
+   par niveau (la calibration) et jour après jour, précision et couverture des alertes « élevé », score de Brier face
+   à la référence naïve, et le détail prévision par prévision : alerte justifiée, fausse alerte, retard non annoncé
+   ou calme confirmé.
 
 ## La prédiction
 
@@ -263,6 +267,11 @@ l'InterRegio, 8 minutes de retard le mercredi puis une suppression le jeudi, tou
 d'exploitation ne se lit ni dans la météo ni dans la forme récente. Quatre jours ne prouvent rien ; chaque prévision
 reste dans `gold.prediction` et le jugement se refera sur plusieurs semaines.
 
+Ce jugement est désormais automatique. Chaque matin, `Transformer_Passages` rapproche les prévisions des trajets réels
+dans `gold.prediction_jugee`, et la page « Prévisions contre réalité » du rapport en tient le bilan. Au 17.11.2026, sur
+35 prévisions jugées : 9 retards réels, 3 alertes dont 2 justifiées, et un score de Brier de 0,186 contre 0,189 pour la
+référence. L'écart est trop mince pour conclure, mais il se lira semaine après semaine.
+
 ```powershell
 .\ponctualite\fab.ps1 import "Ponctualite.Workspace/Predire_Retards.Notebook" -i .\ponctualite\fabric\Predire_Retards.Notebook --format .py -f
 .\ponctualite\fab.ps1 job run "Ponctualite.Workspace/Predire_Retards.Notebook"
@@ -284,7 +293,7 @@ ponctualite/
 │   └── Collecter_Temps_Reel.Notebook/   relevé OJP → Eventhouse (Python)
 ├── rapport/
 │   ├── Ponctualite.SemanticModel/     modèle Direct Lake (TMDL) : tables, relations, mesures
-│   ├── generer_rapport.py             génère le rapport PBIR (5 pages, 54 visuels)
+│   ├── generer_rapport.py             génère le rapport PBIR (6 pages, 69 visuels)
 │   ├── verifier.py                    exécute une requête DAX sur le modèle
 │   └── theme/                         thème Power BI de base
 ├── temps_reel/

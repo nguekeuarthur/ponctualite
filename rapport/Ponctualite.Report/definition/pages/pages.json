@@ -5,7 +5,8 @@
     "lignes",
     "alternatives",
     "meteo",
-    "demain"
+    "demain",
+    "jugement"
   ],
   "activePageName": "trajets"
 }

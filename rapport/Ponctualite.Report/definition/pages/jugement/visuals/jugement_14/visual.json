@@ -1,0 +1,162 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "jugement_14",
+  "position": {
+    "x": 540,
+    "y": 465,
+    "z": 14,
+    "width": 720,
+    "height": 235,
+    "tabOrder": 14
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "jour_cible"
+                }
+              },
+              "queryRef": "prediction_jugee.jour_cible",
+              "nativeQueryRef": "jour_cible"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "trajet"
+                }
+              },
+              "queryRef": "prediction_jugee.trajet",
+              "nativeQueryRef": "trajet"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "niveau"
+                }
+              },
+              "queryRef": "prediction_jugee.niveau",
+              "nativeQueryRef": "niveau"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "resultat"
+                }
+              },
+              "queryRef": "prediction_jugee.resultat",
+              "nativeQueryRef": "resultat"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "probabilite_retard"
+                }
+              },
+              "queryRef": "prediction_jugee.probabilite_retard",
+              "nativeQueryRef": "probabilite_retard"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "retard_reel_min"
+                }
+              },
+              "queryRef": "prediction_jugee.retard_reel_min",
+              "nativeQueryRef": "retard_reel_min"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "supprime"
+                }
+              },
+              "queryRef": "prediction_jugee.supprime",
+              "nativeQueryRef": "supprime"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "prediction_jugee"
+                  }
+                },
+                "Property": "jour_cible"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Chaque prévision et son issue'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

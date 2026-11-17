@@ -340,7 +340,53 @@ def pages():
         ]},
         "Évaluation : apprentissage sur le passé, test sur les derniers jours",
     )
-    return [trajets, lignes, alternatives, meteo, demain]
+    # Page 6 : les prévisions passées face à ce qui s'est réellement produit
+    jugement = Page("jugement", "Prévisions contre réalité")
+    jugement.segment(MARGE, MARGE, 400, 60, colonne("prediction_jugee", "trajet"), "Trajet")
+    jugement.segment(440, MARGE, 400, 60, colonne("prediction_jugee", "niveau"), "Niveau annoncé")
+    jugement.segment(860, MARGE, 400, 60, colonne("prediction_jugee", "resultat"), "Résultat")
+    jugement.cartes(
+        100,
+        [
+            mesure("prediction_jugee", "Prévisions jugées"),
+            mesure("prediction_jugee", "Taux de retard réel"),
+            mesure("prediction_jugee", "Risque moyen annoncé"),
+            mesure("prediction_jugee", "Alertes"),
+            mesure("prediction_jugee", "Précision des alertes"),
+            mesure("prediction_jugee", "Retards annoncés"),
+            mesure("prediction_jugee", "Brier du modèle"),
+            mesure("prediction_jugee", "Brier de la référence"),
+        ],
+    )
+    jugement.visuel(
+        "clusteredColumnChart", MARGE, 220, 500, 230,
+        {"Category": [colonne("prediction_jugee", "niveau")],
+         "Y": [mesure("prediction_jugee", "Risque moyen annoncé"), mesure("prediction_jugee", "Taux de retard réel")]},
+        "Calibration : risque annoncé et retards réels, par niveau",
+    )
+    jugement.visuel(
+        "lineChart", 540, 220, 720, 230,
+        {"Category": [colonne("prediction_jugee", "jour_cible")],
+         "Y": [mesure("prediction_jugee", "Risque moyen annoncé"), mesure("prediction_jugee", "Taux de retard réel")]},
+        "Jour après jour : risque annoncé et retards réels",
+    )
+    jugement.visuel(
+        "clusteredBarChart", MARGE, 465, 500, 235,
+        {"Category": [colonne("prediction_jugee", "resultat")], "Y": [mesure("prediction_jugee", "Prévisions jugées")]},
+        "Ce que chaque prévision est devenue",
+        tri=(mesure("prediction_jugee", "Prévisions jugées"), "Descending"),
+    )
+    jugement.visuel(
+        "tableEx", 540, 465, 720, 235,
+        {"Values": [
+            colonne("prediction_jugee", "jour_cible"), colonne("prediction_jugee", "trajet"), colonne("prediction_jugee", "niveau"),
+            colonne("prediction_jugee", "resultat"), colonne("prediction_jugee", "probabilite_retard"),
+            colonne("prediction_jugee", "retard_reel_min"), colonne("prediction_jugee", "supprime"),
+        ]},
+        "Chaque prévision et son issue",
+        tri=(colonne("prediction_jugee", "jour_cible"), "Descending"),
+    )
+    return [trajets, lignes, alternatives, meteo, demain, jugement]
 
 
 def main():

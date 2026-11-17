@@ -1,0 +1,121 @@
+/// Chaque prévision du modèle rapprochée de ce qui s'est réellement passé (table construite par Transformer_Passages)
+table prediction_jugee
+
+	measure 'Prévisions jugées' = COUNTROWS('prediction_jugee')
+		formatString: #,0
+
+	measure 'Retards réels' = CALCULATE(COUNTROWS('prediction_jugee'), 'prediction_jugee'[en_retard] = TRUE())
+		formatString: #,0
+
+	measure 'Taux de retard réel' = DIVIDE([Retards réels], [Prévisions jugées])
+		formatString: 0 %
+
+	measure 'Risque moyen annoncé' = AVERAGE('prediction_jugee'[probabilite_retard])
+		formatString: 0 %
+
+	measure 'Alertes' = CALCULATE(COUNTROWS('prediction_jugee'), 'prediction_jugee'[niveau] = "élevé")
+		formatString: #,0
+
+	measure 'Alertes justifiées' = CALCULATE(COUNTROWS('prediction_jugee'), 'prediction_jugee'[resultat] = "alerte justifiée")
+		formatString: #,0
+
+	/// Part des alertes « élevé » suivies d'un retard réel
+	measure 'Précision des alertes' = DIVIDE([Alertes justifiées], [Alertes])
+		formatString: 0 %
+
+	/// Part des retards réels qu'une alerte « élevé » avait annoncés
+	measure 'Retards annoncés' = DIVIDE([Alertes justifiées], [Retards réels])
+		formatString: 0 %
+
+	/// Score de Brier : écart quadratique moyen entre le risque annoncé et ce qui s'est passé (0 = parfait)
+	measure 'Brier du modèle' = AVERAGE('prediction_jugee'[ecart_carre])
+		formatString: 0.000
+
+	/// Même score pour la référence naïve, le taux de retard historique du trajet
+	measure 'Brier de la référence' = AVERAGE('prediction_jugee'[ecart_carre_reference])
+		formatString: 0.000
+
+	column jour_cible
+		dataType: dateTime
+		formatString: dd.MM.yyyy
+		summarizeBy: none
+		sourceColumn: jour_cible
+
+	column trajet
+		dataType: string
+		summarizeBy: none
+		sourceColumn: trajet
+
+	column probabilite_retard
+		dataType: double
+		formatString: 0 %
+		summarizeBy: none
+		sourceColumn: probabilite_retard
+
+	column niveau
+		dataType: string
+		summarizeBy: none
+		sourceColumn: niveau
+		sortByColumn: niveau_ordre
+
+	column niveau_ordre
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: niveau_ordre
+
+	column taux_historique
+		dataType: double
+		formatString: 0 %
+		summarizeBy: none
+		sourceColumn: taux_historique
+
+	column genere_le
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm
+		summarizeBy: none
+		sourceColumn: genere_le
+
+	column retard_reel_min
+		dataType: double
+		formatString: 0.0
+		summarizeBy: none
+		sourceColumn: retard_reel_min
+
+	column supprime
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: supprime
+
+	column en_retard
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: en_retard
+
+	column resultat
+		dataType: string
+		summarizeBy: none
+		sourceColumn: resultat
+
+	column ecart_carre
+		dataType: double
+		isHidden
+		formatString: 0.000
+		summarizeBy: none
+		sourceColumn: ecart_carre
+
+	column ecart_carre_reference
+		dataType: double
+		isHidden
+		formatString: 0.000
+		summarizeBy: none
+		sourceColumn: ecart_carre_reference
+
+	partition prediction_jugee = entity
+		mode: directLake
+		source
+			entityName: prediction_jugee
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

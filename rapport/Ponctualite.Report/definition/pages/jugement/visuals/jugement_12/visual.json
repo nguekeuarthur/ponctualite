@@ -1,0 +1,93 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "jugement_12",
+  "position": {
+    "x": 540,
+    "y": 220,
+    "z": 12,
+    "width": 720,
+    "height": 230,
+    "tabOrder": 12
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "jour_cible"
+                }
+              },
+              "queryRef": "prediction_jugee.jour_cible",
+              "nativeQueryRef": "jour_cible",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "Risque moyen annoncé"
+                }
+              },
+              "queryRef": "prediction_jugee.Risque moyen annoncé",
+              "nativeQueryRef": "Risque moyen annoncé"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "Taux de retard réel"
+                }
+              },
+              "queryRef": "prediction_jugee.Taux de retard réel",
+              "nativeQueryRef": "Taux de retard réel"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Jour après jour : risque annoncé et retards réels'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

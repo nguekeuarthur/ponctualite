@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "jugement_10",
+  "position": {
+    "x": 1112,
+    "y": 100,
+    "z": 10,
+    "width": 146,
+    "height": 100,
+    "tabOrder": 10
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "prediction_jugee"
+                    }
+                  },
+                  "Property": "Brier de la référence"
+                }
+              },
+              "queryRef": "prediction_jugee.Brier de la référence",
+              "nativeQueryRef": "Brier de la référence"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

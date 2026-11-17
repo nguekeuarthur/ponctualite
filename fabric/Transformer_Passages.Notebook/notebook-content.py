@@ -24,6 +24,8 @@
 # - **Gold** : un modèle en étoile pour Power BI :
 #   `dim_date`, `dim_ligne`, `dim_arret`, `fait_passage` (un passage à un arrêt)
 #   et `fait_trajet` (un trajet suivi par jour : « mon train de 07:55 », avec son retard réel à l'arrivée).
+# - **Prévisions jugées** `gold.prediction_jugee` : chaque prévision du notebook `Predire_Retards` rapprochée de ce
+#   qui s'est réellement passé, pour juger le modèle au fil des semaines.
 # - **Modèle sémantique** : en fin de notebook, le modèle Direct Lake est rafraîchi pour que le rapport
 #   lise les tables du jour.
 #
@@ -265,6 +267,51 @@ ecrire(fait_trajet, "gold.fait_trajet")
 fait_trajet.orderBy("trajet", "jour").select(
     "jour", "nom_jour", "trajet", "depart_prevu", "arrivee_prevue", "arrivee_reelle", "retard_arrivee_min", "ponctuel", "supprime"
 ).show(100, truncate=False)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Gold : prévisions jugées. Chaque prévision de `gold.prediction` est rapprochée du trajet réel du même jour.
+# Un retard réel est une arrivée à SEUIL_PONCTUALITE_MIN minutes ou plus, ou une suppression : la cible du modèle.
+# Une prévision n'est jugée que si le trajet a été mesuré ce jour-là ; celle de demain attend son tour.
+# L'étape ne fait jamais échouer la transformation : sans prévision, ou si le rapprochement échoue, elle est ignorée.
+try:
+    if spark.catalog.tableExists("gold.prediction"):
+        reel = spark.table("gold.fait_trajet").select(
+            F.col("jour").alias("jour_cible"), "trajet",
+            F.col("retard_arrivee_min").alias("retard_reel_min"), F.coalesce("supprime", F.lit(False)).alias("supprime"),
+        )
+        alerte = F.col("niveau") == "élevé"
+        issue = F.col("en_retard").cast("double")
+        prediction_jugee = (
+            spark.table("gold.prediction")
+            .select("jour_cible", "trajet", "probabilite_retard", "niveau", "taux_historique", "genere_le")
+            .join(reel, ["jour_cible", "trajet"], "inner")
+            .where(F.col("supprime") | F.col("retard_reel_min").isNotNull())
+            .withColumn("en_retard", F.col("supprime") | (F.col("retard_reel_min") >= SEUIL_PONCTUALITE_MIN))
+            .withColumn("niveau_ordre", F.when(F.col("niveau") == "faible", 1).when(F.col("niveau") == "moyen", 2).otherwise(3))
+            .withColumn(
+                "resultat",
+                F.when(alerte & F.col("en_retard"), "alerte justifiée")
+                .when(alerte, "fausse alerte")
+                .when(F.col("en_retard"), "retard non annoncé")
+                .otherwise("calme confirmé"),
+            )
+            # Écarts quadratiques : leur moyenne est le score de Brier du modèle, et celui de la référence naïve
+            .withColumn("ecart_carre", F.pow(F.col("probabilite_retard") - issue, 2))
+            .withColumn("ecart_carre_reference", F.pow(F.col("taux_historique") - issue, 2))
+        )
+        ecrire(prediction_jugee, "gold.prediction_jugee")
+    else:
+        print("gold.prediction absente : aucune prévision à juger")
+except Exception as e:
+    print(f"Prévisions jugées non mises à jour : {type(e).__name__} : {e}")
 
 # METADATA ********************
 
