@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
   "name": "trajets_01",
   "position": {
-    "x": 440,
+    "x": 335,
     "y": 20,
     "z": 1,
-    "width": 400,
+    "width": 295,
     "height": 60,
     "tabOrder": 1
   },

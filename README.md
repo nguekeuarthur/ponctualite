@@ -216,7 +216,8 @@ attendus chaque jour, sans interruption depuis le premier après-midi.
 Cinq pages, en Direct Lake sur le modèle gold :
 
 1. **Mes trajets** : ponctualité, retard moyen et maximal, jours à plus de 3 minutes, suppressions, minutes perdues ;
-   retard jour par jour, ponctualité selon le jour de la semaine, liste des pires jours.
+   retard jour par jour, ponctualité selon le jour de la semaine, liste des pires jours. Le segment « Jour ouvré »
+   écarte les week-ends, où les trains sont nettement plus souvent supprimés.
 2. **Lignes et gares** : les 13,75 millions de passages du périmètre (90 lignes, 443 arrêts) ; ponctualité par ligne,
    retard selon l'heure de la journée, matrice ligne × jour de la semaine colorée du rouge au vert.
 3. **Alternatives** : pour une gare d'arrivée, la ponctualité de chaque ligne heure par heure, puis chaque horaire avec
@@ -283,7 +284,7 @@ ponctualite/
 │   └── Collecter_Temps_Reel.Notebook/   relevé OJP → Eventhouse (Python)
 ├── rapport/
 │   ├── Ponctualite.SemanticModel/     modèle Direct Lake (TMDL) : tables, relations, mesures
-│   ├── generer_rapport.py             génère le rapport PBIR (5 pages, 53 visuels)
+│   ├── generer_rapport.py             génère le rapport PBIR (5 pages, 54 visuels)
 │   ├── verifier.py                    exécute une requête DAX sur le modèle
 │   └── theme/                         thème Power BI de base
 ├── temps_reel/

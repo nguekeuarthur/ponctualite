@@ -150,9 +150,10 @@ class Page:
 def pages():
     # Page 1 : mes trajets suivis
     trajets = Page("trajets", "Mes trajets")
-    trajets.segment(MARGE, MARGE, 400, 60, colonne("fait_trajet", "trajet"), "Trajet")
-    trajets.segment(440, MARGE, 400, 60, colonne("dim_date", "nom_jour"), "Jour de la semaine")
-    trajets.segment(860, MARGE, 400, 60, colonne("dim_date", "nom_mois"), "Mois")
+    trajets.segment(MARGE, MARGE, 295, 60, colonne("fait_trajet", "trajet"), "Trajet")
+    trajets.segment(335, MARGE, 295, 60, colonne("dim_date", "nom_jour"), "Jour de la semaine")
+    trajets.segment(650, MARGE, 295, 60, colonne("dim_date", "nom_mois"), "Mois")
+    trajets.segment(965, MARGE, 295, 60, colonne("dim_date", "jour_ouvre"), "Jour ouvré")
     trajets.cartes(
         100,
         [
