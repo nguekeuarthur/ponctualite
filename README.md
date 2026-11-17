@@ -310,9 +310,12 @@ signale. Le contrôle d'unicité compare désormais les clés comme Power BI les
 Exercice d'alerte : déposer un fichier vide `Files/config/simuler_echec_recette` dans le lakehouse fait échouer la
 recette suivante, pour vérifier que le blocage fonctionne. Le fichier est retiré aussitôt.
 
-Limite : la porte n'est étanche que si l'actualisation automatique du modèle est désactivée (réglage du modèle
-sémantique « Maintenir vos données Direct Lake à jour »). Sinon, un modèle chargé en mémoire peut relire une table dès
-qu'elle change, avant que la recette n'ait rendu son verdict.
+Limite, vérifiée par l'exercice du 17.11.2026 : le notebook s'est bien terminé en erreur, le verdict « Bloquée » a été
+publié et le fichier d'exercice retiré, mais une table refusée a quand même été relue par le modèle. La cause est
+l'actualisation automatique des modèles Direct Lake, active par défaut : un modèle chargé en mémoire relit une table
+dès qu'elle change, sans attendre le verdict. La porte n'est étanche qu'une fois ce réglage désactivé, dans les
+paramètres du modèle sémantique, section Actualisation, « Maintenir vos données Direct Lake à jour ». Le rapport ne se
+met alors à jour que par les rafraîchissements demandés en fin de notebook et par le flux de déploiement.
 
 ## Le tableau de bord temps réel
 
