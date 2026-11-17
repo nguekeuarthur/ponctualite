@@ -472,7 +472,40 @@ def pages():
         "Chaque prévision et son issue",
         tri=(colonne("prediction_jugee", "jour_cible"), "Descending"),
     )
-    return [trajets, porte, lignes, alternatives, meteo, demain, jugement]
+    # Page 8 : la recette de qualité, qui décide si les tables du jour sont publiées
+    qualite = Page("qualite", "Qualité des données")
+    qualite.segment(MARGE, MARGE, 400, 60, colonne("qualite", "famille"), "Famille de contrôles")
+    qualite.segment(440, MARGE, 400, 60, colonne("qualite", "gravite"), "Gravité")
+    qualite.segment(860, MARGE, 400, 60, colonne("qualite", "statut"), "Statut")
+    qualite.cartes(
+        100,
+        [
+            mesure("qualite", "Verdict de la recette"),
+            mesure("qualite", "Contrôles de la dernière recette"),
+            mesure("qualite", "Échecs bloquants"),
+            mesure("qualite", "Alertes de qualité"),
+            mesure("qualite", "Taux de réussite de la recette"),
+        ],
+    )
+    qualite.visuel(
+        "tableEx", MARGE, 220, 1240, 270,
+        {"Values": [
+            colonne("qualite", "execution"), colonne("qualite", "famille"), colonne("qualite", "controle"),
+            colonne("qualite", "gravite"), colonne("qualite", "statut"), colonne("qualite", "valeur"), colonne("qualite", "seuil"),
+            # le détail cite les valeurs fautives (un arrêt, un trajet) : il n'est pas affiché en mode public
+            *([] if PUBLIC else [colonne("qualite", "detail")]),
+        ]},
+        "Dernière recette : chaque contrôle, son seuil et son résultat",
+        tri=(colonne("qualite", "statut"), "Ascending"),
+        filtres=[filtre_egal("qualite", "derniere_execution", "true")],
+    )
+    qualite.visuel(
+        "clusteredColumnChart", MARGE, 505, 1240, 195,
+        {"Category": [colonne("qualite", "execution")], "Series": [colonne("qualite", "statut")],
+         "Y": [mesure("qualite", "Contrôles")]},
+        "Contrôles réussis et échoués, exécution après exécution",
+    )
+    return [trajets, porte, lignes, alternatives, meteo, demain, jugement, qualite]
 
 
 def main():

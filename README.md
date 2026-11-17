@@ -68,6 +68,7 @@ Lakehouse Ponctualite
    gold.fait_trajet       un trajet suivi par jour : « mon train de 07:55 », avec son retard réel à l'arrivée
    gold.fait_itineraire   un voyage porte à porte par jour : les trajets suivis enchaînés, correspondances comprises
    gold.fait_correspondance   une correspondance par jour : marge prévue, marge réelle, tenue ou manquée
+   gold.qualite           la recette : un contrôle par ligne et par exécution, avec son verdict
         │
         ▼
 Power BI (Direct Lake) : fiabilité par trajet, par jour de semaine, par heure ; meilleure alternative
@@ -278,6 +279,41 @@ python .\ponctualite\temps_reel\generer_tableau_de_bord.py
 La définition suit la structure des tableaux de bord publiés par Microsoft dans `fabric-toolbox` (schéma 60) ; un
 `icon` vide dans une règle de couleur ou une clé `title` à la racine font échouer le chargement.
 
+## Qualité des données : contrôler avant de publier
+
+Le rapport ne montre les tables du jour que si elles ont passé une recette. `Transformer_Passages` écrit les tables
+gold, les contrôle, puis seulement les publie. En Direct Lake, publier veut dire rafraîchir le modèle sémantique :
+tant qu'il ne l'est pas, le rapport reste sur la version précédente des tables.
+
+| Famille | Contrôle | Gravité |
+|---|---|---|
+| Complétude | Tables obligatoires présentes et non vides | bloquant |
+| Unicité | Clé de chaque dimension, comparée comme le fait Power BI : sans la casse ni les espaces superflus | bloquant |
+| Intégrité | Chaque fait rattaché à ses dimensions, neuf rattachements | bloquant |
+| Grain | Une seule ligne par jour et par trajet, par itinéraire, par prévision | bloquant |
+| Fraîcheur | Données de la veille chargées | alerte |
+| Volume | Passages du dernier jour entre 50 % et 150 % de la médiane des quatre dernières semaines | alerte |
+| Complétude | Aucun jour manquant sur 35 jours ; tous les trajets suivis trouvés le dernier jour ouvré | alerte |
+| Mesure | Au moins la moitié des heures réelles mesurées | alerte |
+
+- **Un échec bloquant** casse ou fausse le rapport. Les tables ne sont pas publiées, sauf celle de la recette pour
+  que la page « Qualité des données » montre l'échec, et le notebook se termine en erreur.
+- **Une alerte** est consignée sans rien bloquer : un fichier source en retard n'est pas une faute de la transformation.
+- `Predire_Retards`, le soir, ne publie que ses trois tables. Il ne peut donc pas publier à la place de la
+  transformation des tables qu'une recette aurait refusées le matin.
+- Chaque exécution ajoute ses résultats à `gold.qualite` et laisse son verdict dans `Files/journal/qualite.txt`.
+
+Pourquoi cette recette : Spark distingue deux graphies d'un même nom d'arrêt, Power BI non. La dimension des arrêts a
+ainsi porté un doublon de clé pendant une semaine, et choisir une gare dans le rapport échouait sans que rien ne le
+signale. Le contrôle d'unicité compare désormais les clés comme Power BI les compare.
+
+Exercice d'alerte : déposer un fichier vide `Files/config/simuler_echec_recette` dans le lakehouse fait échouer la
+recette suivante, pour vérifier que le blocage fonctionne. Le fichier est retiré aussitôt.
+
+Limite : la porte n'est étanche que si l'actualisation automatique du modèle est désactivée (réglage du modèle
+sémantique « Maintenir vos données Direct Lake à jour »). Sinon, un modèle chargé en mémoire peut relire une table dès
+qu'elle change, avant que la recette n'ait rendu son verdict.
+
 ## Le tableau de bord temps réel
 
 Deux pages, rafraîchies toutes les 5 minutes, sur la table `departs` de l'Eventhouse :
@@ -294,7 +330,7 @@ attendus chaque jour, sans interruption depuis le premier après-midi.
 
 ## Le rapport
 
-Sept pages, en Direct Lake sur le modèle gold :
+Huit pages, en Direct Lake sur le modèle gold :
 
 1. **Mes trajets** : ponctualité, retard moyen et maximal, jours à plus de 3 minutes, suppressions, minutes perdues ;
    retard jour par jour, ponctualité selon le jour de la semaine, liste des pires jours. Le segment « Jour ouvré »
@@ -316,6 +352,8 @@ Sept pages, en Direct Lake sur le modèle gold :
    par niveau (la calibration) et jour après jour, précision et couverture des alertes « élevé », score de Brier face
    à la référence naïve, et le détail prévision par prévision : alerte justifiée, fausse alerte, retard non annoncé
    ou calme confirmé.
+8. **Qualité des données** : le verdict de la dernière recette, chaque contrôle avec son seuil et son résultat, et
+   l'historique des contrôles réussis et échoués, exécution après exécution.
 
 ## La prédiction
 
@@ -429,11 +467,11 @@ ponctualite/
 │   ├── Charger_Archives.Notebook/       bronze, archives mensuelles (Spark)
 │   ├── Charger_Meteo.Notebook/          météo MétéoSuisse : bronze, silver, gold (Spark)
 │   ├── Predire_Retards.Notebook/        modèle de risque de retard, évaluation, prévision de demain (Spark + scikit-learn)
-│   ├── Transformer_Passages.Notebook/   silver et gold (Spark)
+│   ├── Transformer_Passages.Notebook/   silver et gold, recette de qualité, publication (Spark)
 │   └── Collecter_Temps_Reel.Notebook/   relevé OJP → Eventhouse (Python)
 ├── rapport/
 │   ├── Ponctualite.SemanticModel/     modèle Direct Lake (TMDL) : tables, relations, mesures
-│   ├── generer_rapport.py             génère le rapport PBIR (7 pages, 77 visuels)
+│   ├── generer_rapport.py             génère le rapport PBIR (8 pages, 87 visuels)
 │   ├── verifier.py                    exécute une requête DAX sur le modèle
 │   └── theme/                         thème Power BI de base
 ├── temps_reel/

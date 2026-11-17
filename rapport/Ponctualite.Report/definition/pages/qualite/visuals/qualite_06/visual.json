@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "qualite_06",
+  "position": {
+    "x": 770,
+    "y": 100,
+    "z": 6,
+    "width": 240,
+    "height": 100,
+    "tabOrder": 6
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "Alertes de qualité"
+                }
+              },
+              "queryRef": "qualite.Alertes de qualité",
+              "nativeQueryRef": "Alertes de qualité"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

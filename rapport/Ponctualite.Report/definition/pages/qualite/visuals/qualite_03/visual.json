@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "qualite_03",
+  "position": {
+    "x": 20,
+    "y": 100,
+    "z": 3,
+    "width": 240,
+    "height": 100,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "Verdict de la recette"
+                }
+              },
+              "queryRef": "qualite.Verdict de la recette",
+              "nativeQueryRef": "Verdict de la recette"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

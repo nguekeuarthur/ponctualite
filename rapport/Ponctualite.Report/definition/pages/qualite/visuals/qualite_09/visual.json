@@ -1,0 +1,97 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "qualite_09",
+  "position": {
+    "x": 20,
+    "y": 505,
+    "z": 9,
+    "width": 1240,
+    "height": 195,
+    "tabOrder": 9
+  },
+  "visual": {
+    "visualType": "clusteredColumnChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "execution"
+                }
+              },
+              "queryRef": "qualite.execution",
+              "nativeQueryRef": "execution",
+              "active": true
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "statut"
+                }
+              },
+              "queryRef": "qualite.statut",
+              "nativeQueryRef": "statut"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "Contrôles"
+                }
+              },
+              "queryRef": "qualite.Contrôles",
+              "nativeQueryRef": "Contrôles"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Contrôles réussis et échoués, exécution après exécution'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

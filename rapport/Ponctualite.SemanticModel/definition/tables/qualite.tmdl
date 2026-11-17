@@ -1,0 +1,91 @@
+/// Recette de qualité : un contrôle par ligne et par exécution de la transformation (Transformer_Passages)
+table qualite
+
+	measure 'Contrôles' = COUNTROWS(qualite)
+		formatString: #,0
+
+	measure 'Contrôles en échec' = CALCULATE(COUNTROWS(qualite), qualite[statut] = "échoué")
+		formatString: #,0
+
+	measure 'Contrôles de la dernière recette' = CALCULATE(COUNTROWS(qualite), qualite[derniere_execution] = TRUE())
+		formatString: #,0
+
+	/// Contrôles bloquants en échec à la dernière exécution : s'il y en a, les tables n'ont pas été publiées
+	measure 'Échecs bloquants' =
+			CALCULATE(COUNTROWS(qualite), qualite[derniere_execution] = TRUE(), qualite[statut] = "échoué", qualite[gravite] = "bloquant") + 0
+		formatString: #,0
+
+	/// Alertes de la dernière exécution : consignées sans bloquer la publication
+	measure 'Alertes de qualité' =
+			CALCULATE(COUNTROWS(qualite), qualite[derniere_execution] = TRUE(), qualite[statut] = "échoué", qualite[gravite] = "alerte") + 0
+		formatString: #,0
+
+	measure 'Taux de réussite de la recette' =
+			DIVIDE(
+			    CALCULATE(COUNTROWS(qualite), qualite[derniere_execution] = TRUE(), qualite[statut] = "réussi"),
+			    [Contrôles de la dernière recette]
+			)
+		formatString: 0 %
+
+	measure 'Verdict de la recette' = IF([Échecs bloquants] > 0, "Bloquée", "Validée")
+
+	column execution
+		dataType: dateTime
+		formatString: dd.MM.yyyy HH:mm
+		summarizeBy: none
+		sourceColumn: execution
+
+	column jour_controle
+		dataType: dateTime
+		formatString: dd.MM.yyyy
+		summarizeBy: none
+		sourceColumn: jour_controle
+
+	column controle
+		dataType: string
+		summarizeBy: none
+		sourceColumn: controle
+
+	column famille
+		dataType: string
+		summarizeBy: none
+		sourceColumn: famille
+
+	column gravite
+		dataType: string
+		summarizeBy: none
+		sourceColumn: gravite
+
+	column statut
+		dataType: string
+		summarizeBy: none
+		sourceColumn: statut
+
+	column valeur
+		dataType: double
+		formatString: 0.##
+		summarizeBy: none
+		sourceColumn: valeur
+
+	column seuil
+		dataType: string
+		summarizeBy: none
+		sourceColumn: seuil
+
+	column detail
+		dataType: string
+		summarizeBy: none
+		sourceColumn: detail
+
+	column derniere_execution
+		dataType: boolean
+		summarizeBy: none
+		sourceColumn: derniere_execution
+
+	partition qualite = entity
+		mode: directLake
+		source
+			entityName: qualite
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

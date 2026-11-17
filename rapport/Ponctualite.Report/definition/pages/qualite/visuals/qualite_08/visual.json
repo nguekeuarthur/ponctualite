@@ -1,0 +1,234 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.5.0/schema.json",
+  "name": "qualite_08",
+  "position": {
+    "x": 20,
+    "y": 220,
+    "z": 8,
+    "width": 1240,
+    "height": 270,
+    "tabOrder": 8
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "execution"
+                }
+              },
+              "queryRef": "qualite.execution",
+              "nativeQueryRef": "execution"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "famille"
+                }
+              },
+              "queryRef": "qualite.famille",
+              "nativeQueryRef": "famille"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "controle"
+                }
+              },
+              "queryRef": "qualite.controle",
+              "nativeQueryRef": "controle"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "gravite"
+                }
+              },
+              "queryRef": "qualite.gravite",
+              "nativeQueryRef": "gravite"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "statut"
+                }
+              },
+              "queryRef": "qualite.statut",
+              "nativeQueryRef": "statut"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "valeur"
+                }
+              },
+              "queryRef": "qualite.valeur",
+              "nativeQueryRef": "valeur"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "seuil"
+                }
+              },
+              "queryRef": "qualite.seuil",
+              "nativeQueryRef": "seuil"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "qualite"
+                    }
+                  },
+                  "Property": "detail"
+                }
+              },
+              "queryRef": "qualite.detail",
+              "nativeQueryRef": "detail"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "qualite"
+                  }
+                },
+                "Property": "statut"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Dernière recette : chaque contrôle, son seuil et son résultat'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "filtre_qualite_derniere_execution",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "qualite"
+              }
+            },
+            "Property": "derniere_execution"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "t",
+              "Entity": "qualite",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "t"
+                          }
+                        },
+                        "Property": "derniere_execution"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "true"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
+  }
+}

@@ -31,8 +31,10 @@
 #   dévoiler le périmètre.
 # - **Prévisions jugées** `gold.prediction_jugee` : chaque prévision du notebook `Predire_Retards` rapprochée de ce
 #   qui s'est réellement passé, pour juger le modèle au fil des semaines.
-# - **Modèle sémantique** : en fin de notebook, le modèle Direct Lake est rafraîchi pour que le rapport
-#   lise les tables du jour.
+# - **Recette** `gold.qualite` : les tables gold sont contrôlées avant d'être publiées. Clés de dimension uniques,
+#   faits rattachés à leurs dimensions, grain respecté, fraîcheur, volume.
+# - **Modèle sémantique** : en fin de notebook, le modèle Direct Lake est rafraîchi pour que le rapport lise les
+#   tables du jour, seulement si la recette n'a relevé aucun échec bloquant.
 #
 # Définition de la ponctualité : comme aux CFF, un passage est ponctuel si le retard à l'arrivée est **inférieur à 3 minutes**.
 # Un train supprimé n'est jamais ponctuel.
@@ -573,18 +575,207 @@ except Exception as e:
 
 # CELL ********************
 
-# Dernière étape : demander au modèle sémantique Direct Lake de relire les tables gold (« recadrage »).
-# Sans cela, le rapport peut rester sur la version précédente des tables tant que personne ne l'a ouvert.
-# L'étape ne fait jamais échouer la transformation : si le modèle n'est pas encore déployé, elle est ignorée.
+# Recette : les tables gold sont contrôlées avant d'être publiées dans le modèle sémantique.
+# - Contrôles bloquants : ceux dont l'échec casse ou fausse le rapport. Clé de dimension en double au sens de Power BI
+#   (qui compare les textes sans la casse), fait sans dimension, grain non respecté, table vide. En cas d'échec, le
+#   modèle n'est pas rafraîchi et le notebook se termine en erreur.
+# - Alertes : fraîcheur, volume, jours manquants, heures réelles, trajets non trouvés. Elles sont consignées sans
+#   rien bloquer : un fichier source en retard n'est pas une faute de la transformation.
+# Chaque exécution ajoute ses résultats à `gold.qualite`, qui garde l'historique.
+# Exercice d'alerte : un fichier `Files/config/simuler_echec_recette` dans le lakehouse fait échouer la prochaine
+# recette, pour vérifier que le blocage fonctionne ; il est retiré aussitôt.
+import os
+from datetime import datetime, timedelta
+from statistics import median
+from zoneinfo import ZoneInfo
+
+EXECUTION = datetime.now(ZoneInfo("Europe/Zurich")).replace(tzinfo=None, microsecond=0)
+controles = []
+
+
+def cle(colonne):
+    """La clé telle que Power BI la compare : sans tenir compte de la casse ni des espaces superflus."""
+    return F.lower(F.trim(F.regexp_replace(F.col(colonne).cast("string"), r"\s+", " ")))
+
+
+def controler(nom, famille, gravite, calcul):
+    """Exécute un contrôle et le consigne. Une erreur pendant le calcul compte comme un échec, avec sa cause."""
+    try:
+        reussi, valeur, seuil, detail = calcul()
+    except Exception as e:
+        reussi, valeur, seuil, detail = False, None, "", f"{type(e).__name__} : {e}"
+    controles.append((nom, famille, gravite, "réussi" if reussi else "échoué",
+                      None if valeur is None else float(valeur), seuil, str(detail)[:500]))
+
+
+def unicite(table, colonne):
+    def calcul():
+        doublons = spark.table(table).groupBy(cle(colonne).alias("k")).count().filter("count > 1")
+        n = doublons.count()
+        return n == 0, n, "aucune clé en double", ", ".join(str(r["k"]) for r in doublons.limit(3).collect())
+    return calcul
+
+
+def integrite(fait, colonne_fait, dimension, colonne_dimension):
+    def calcul():
+        connues = spark.table(dimension).select(cle(colonne_dimension).alias("k")).distinct()
+        orphelines = (spark.table(fait).filter(F.col(colonne_fait).isNotNull())
+                      .select(cle(colonne_fait).alias("k")).distinct().join(connues, "k", "left_anti"))
+        n = orphelines.count()
+        return n == 0, n, "aucune valeur sans dimension", ", ".join(str(r["k"]) for r in orphelines.limit(3).collect())
+    return calcul
+
+
+def grain(table, colonnes):
+    def calcul():
+        n = spark.table(table).groupBy(*colonnes).count().filter("count > 1").count()
+        return n == 0, n, "une seule ligne par " + " et ".join(colonnes), ""
+    return calcul
+
+
+def existe(table):
+    return spark.catalog.tableExists(table)
+
+
+# Contrôles bloquants
+OBLIGATOIRES = ["gold.dim_date", "gold.dim_ligne", "gold.dim_arret", "gold.dim_trajet", "gold.fait_passage", "gold.fait_trajet"]
+controler("Tables obligatoires présentes et non vides", "complétude", "bloquant", lambda: (
+    lambda vides: (not vides, len(vides), "aucune table vide", ", ".join(vides)))(
+        [x for x in OBLIGATOIRES if not existe(x) or spark.table(x).limit(1).count() == 0]))
+
+for table, colonne in [("gold.dim_date", "jour"), ("gold.dim_ligne", "ligne_cle"), ("gold.dim_arret", "arret"),
+                       ("gold.dim_trajet", "trajet"), ("gold.dim_itineraire", "itineraire")]:
+    if existe(table):
+        controler(f"Clé unique : {table.split('.')[1]}", "unicité", "bloquant", unicite(table, colonne))
+
+for fait, colonne_fait, dimension, colonne_dimension in [
+    ("gold.fait_passage", "jour", "gold.dim_date", "jour"),
+    ("gold.fait_passage", "ligne_cle", "gold.dim_ligne", "ligne_cle"),
+    ("gold.fait_passage", "arret", "gold.dim_arret", "arret"),
+    ("gold.fait_trajet", "jour", "gold.dim_date", "jour"),
+    ("gold.fait_trajet", "trajet", "gold.dim_trajet", "trajet"),
+    ("gold.prediction", "trajet", "gold.dim_trajet", "trajet"),
+    ("gold.prediction_jugee", "trajet", "gold.dim_trajet", "trajet"),
+    ("gold.fait_itineraire", "itineraire", "gold.dim_itineraire", "itineraire"),
+    ("gold.fait_correspondance", "itineraire", "gold.dim_itineraire", "itineraire"),
+]:
+    if existe(fait) and existe(dimension):
+        controler(f"Rattachement : {fait.split('.')[1]}.{colonne_fait}", "intégrité", "bloquant",
+                  integrite(fait, colonne_fait, dimension, colonne_dimension))
+
+for table, colonnes in [("gold.fait_trajet", ["jour", "trajet"]), ("gold.fait_itineraire", ["jour", "itineraire"]),
+                        ("gold.prediction", ["jour_cible", "trajet"])]:
+    if existe(table):
+        controler(f"Grain : {table.split('.')[1]}", "grain", "bloquant", grain(table, colonnes))
+
+# Alertes : elles portent sur le dernier jour chargé et sur les semaines qui le précèdent
+passages = spark.table("gold.fait_passage")
+par_jour = {l["jour"]: l["n"] for l in passages.groupBy("jour").agg(F.count("*").alias("n")).collect()}
+dernier = max(par_jour)
+veille = EXECUTION.date() - timedelta(days=1)
+
+
+def fraicheur():
+    retard = (veille - dernier).days
+    return retard <= 0, retard, "données de la veille", f"dernier jour chargé : {dernier:%d.%m.%Y}"
+
+
+def volume():
+    semblables = [n for jour, n in par_jour.items()
+                  if 0 < (dernier - jour).days <= 28 and (jour.weekday() < 5) == (dernier.weekday() < 5)]
+    if not semblables:
+        return True, None, "entre 50 % et 150 % de la médiane", "pas assez d'historique"
+    rapport = par_jour[dernier] / median(semblables)
+    return 0.5 <= rapport <= 1.5, round(rapport, 2), "entre 50 % et 150 % de la médiane des 4 dernières semaines", \
+        f"{par_jour[dernier]} passages, médiane {int(median(semblables))}"
+
+
+def jours_manquants():
+    absents = [dernier - timedelta(days=i) for i in range(35) if dernier - timedelta(days=i) not in par_jour]
+    return not absents, len(absents), "aucun jour manquant sur 35 jours", ", ".join(f"{j:%d.%m.%Y}" for j in absents[:8])
+
+
+def heures_reelles():
+    part = (passages.filter((F.col("jour") == F.lit(dernier)) & F.col("arrivee_prevue").isNotNull())
+            .agg(F.avg((F.col("arrivee_statut") == "REAL").cast("double")).alias("p")).first()["p"])
+    return part is not None and part >= 0.5, None if part is None else round(part, 3), "au moins 50 % d'heures réelles mesurées", ""
+
+
+def trajets_trouves():
+    jour = dernier
+    while jour.weekday() >= 5:
+        jour -= timedelta(days=1)
+    prevus = [x["nom"] for x in CONFIG["trajets"] if re.fullmatch(r"\d{2}:\d{2}", x["heure_depart"])
+              and (x.get("jours") != "ven" or jour.weekday() == 4)]
+    trouves = {l["trajet"] for l in spark.table("gold.fait_trajet").filter(F.col("jour") == F.lit(jour)).select("trajet").collect()}
+    absents = [x for x in prevus if x not in trouves]
+    return not absents, len(absents), "tous les trajets suivis trouvés", f"{jour:%d.%m.%Y} : " + ", ".join(absents) if absents else ""
+
+
+controler("Fraîcheur : données de la veille chargées", "fraîcheur", "alerte", fraicheur)
+controler("Volume du dernier jour", "volume", "alerte", volume)
+controler("Jours manquants sur les 35 derniers jours", "complétude", "alerte", jours_manquants)
+controler("Heures réelles mesurées le dernier jour", "mesure", "alerte", heures_reelles)
+controler("Trajets suivis trouvés le dernier jour ouvré", "complétude", "alerte", trajets_trouves)
+
+# Exercice d'alerte : un fichier déposé dans le lakehouse fait échouer la recette, une fois
+DRAPEAU = "/lakehouse/default/Files/config/simuler_echec_recette"
+if os.path.exists(DRAPEAU):
+    os.remove(DRAPEAU)
+    controles.append(("Exercice d'alerte : échec simulé", "exercice", "bloquant", "échoué", None, "",
+                      "fichier Files/config/simuler_echec_recette présent"))
+
+bloquants = [c for c in controles if c[2] == "bloquant" and c[3] == "échoué"]
+alertes = [c for c in controles if c[2] == "alerte" and c[3] == "échoué"]
+RECETTE_BLOQUEE = bool(bloquants)
+
+recette = (
+    spark.createDataFrame(controles, "controle string, famille string, gravite string, statut string, valeur double, seuil string, detail string")
+    .withColumn("execution", F.lit(EXECUTION).cast("timestamp"))
+    .withColumn("jour_controle", F.lit(dernier).cast("date"))
+    .withColumn("derniere_execution", F.lit(True))
+)
+if existe("gold.qualite"):
+    recette = spark.table("gold.qualite").withColumn("derniere_execution", F.lit(False)).unionByName(recette, allowMissingColumns=True)
+ecrire(recette, "gold.qualite")
+
+verdict = "BLOQUÉE" if RECETTE_BLOQUEE else "validée"
+bilan = [f"Recette {verdict} : {len(controles)} contrôles, {len(bloquants)} échec(s) bloquant(s), {len(alertes)} alerte(s)"]
+bilan += [f"{c[2]} | {c[0]} | {c[6]}" for c in bloquants + alertes]
+print("\n".join(bilan))
+journal("qualite", "\n".join(bilan))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Dernière étape : publier. Le modèle sémantique Direct Lake relit les tables gold (« recadrage ») : c'est ce
+# rafraîchissement qui rend les données du jour visibles dans le rapport.
+# - Recette validée : toutes les tables sont publiées.
+# - Recette bloquée : seule la table de la recette est publiée, pour que le rapport montre l'échec ; les autres
+#   tables restent sur leur dernière version validée, et le notebook se termine en erreur.
+# Le rafraîchissement lui-même ne fait jamais échouer la transformation : si le modèle n'est pas déployé, il est ignoré.
 MODELE_SEMANTIQUE = "Ponctualite"
 
 try:
     import sempy.fabric as fabric
 
-    demande = fabric.refresh_dataset(dataset=MODELE_SEMANTIQUE, refresh_type="full")
-    print(f"Modèle sémantique {MODELE_SEMANTIQUE} : rafraîchissement demandé ({demande})")
+    if RECETTE_BLOQUEE:
+        demande = fabric.refresh_dataset(dataset=MODELE_SEMANTIQUE, refresh_type="full", objects=[{"table": "qualite"}])
+        print(f"Modèle sémantique {MODELE_SEMANTIQUE} : seule la table de la recette est publiée ({demande})")
+    else:
+        demande = fabric.refresh_dataset(dataset=MODELE_SEMANTIQUE, refresh_type="full")
+        print(f"Modèle sémantique {MODELE_SEMANTIQUE} : rafraîchissement demandé ({demande})")
 except Exception as e:  # modèle absent, droits manquants ou service indisponible
     print(f"Modèle sémantique {MODELE_SEMANTIQUE} non rafraîchi : {type(e).__name__} : {e}")
+
+if RECETTE_BLOQUEE:
+    raise RuntimeError("Recette de qualité en échec, tables non publiées : " + " ; ".join(c[0] for c in bloquants))
 
 # METADATA ********************
 
