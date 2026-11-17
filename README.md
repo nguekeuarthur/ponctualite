@@ -317,10 +317,65 @@ référence. L'écart est trop mince pour conclure, mais il se lira semaine apr�
 .\ponctualite\fab.ps1 job run "Ponctualite.Workspace/Predire_Retards.Notebook"
 ```
 
+## CI/CD
+
+Le projet se redéploie tout seul. Le flux GitHub Actions [`deploy-fabric.yml`](.github/workflows/deploy-fabric.yml)
+tourne à chaque pull request et à chaque poussée sur `main` qui touche `fabric/`, `rapport/`, `temps_reel/` ou
+`scripts/`. Il peut aussi être lancé à la main.
+
+### Ce que fait le flux
+
+| Étape | Pull request | Poussée sur `main` |
+|---|:---:|:---:|
+| Aucun fichier privé versionné : ni la configuration des trajets, ni la clé d'API | ✔ | ✔ |
+| Compilation des notebooks et des scripts Python | ✔ | ✔ |
+| Validité JSON de toutes les définitions (rapport PBIR, tableau de bord, `.platform`) | ✔ | ✔ |
+| Indentation des fichiers TMDL du modèle sémantique | ✔ | ✔ |
+| Rapport et tableau de bord régénérés, puis comparés aux dossiers versionnés | ✔ | ✔ |
+| `fab import` des six notebooks, du modèle sémantique (suivi d'un rafraîchissement), du rapport et du tableau de bord | | ✔ |
+| Planifications relevées avant et après : le flux échoue si l'une d'elles a disparu ou a été désactivée | | ✔ |
+
+Ce que le flux ne fait pas, volontairement :
+
+- **Il n'exécute aucun notebook.** La capacité d'essai ne sert qu'un travail Spark à la fois ; les données restent
+  l'affaire de la chaîne quotidienne planifiée.
+- **Il ne touche à aucune donnée privée.** La configuration des trajets et la clé OJP vivent dans le lakehouse
+  (`Files/config/`), envoyées une fois à la main. Le flux n'en a pas besoin.
+- **Il ne crée pas les planifications.** Elles sont posées une fois (voir « Lancer le projet ») ; le flux vérifie
+  seulement qu'un réimport ne les a pas cassées, avec [`scripts/planifications.py`](scripts/planifications.py).
+
+### Comment il s'authentifie
+
+Aucun secret, ni dans le dépôt ni dans GitHub. Le flux demande à GitHub un jeton OIDC (permission `id-token: write`),
+vérifie qu'Entra ID l'accepte, puis la CLI Fabric l'échange contre un jeton Entra ID avec
+`fab auth login -u <id d'application> --federated-token <jeton> --tenant <id du locataire>`. La mise en place se fait une fois :
+
+1. **Une inscription d'application Entra ID**, sans secret ni certificat, avec un identifiant fédéré pour ce dépôt :
+   émetteur `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, et pour sujet celui
+   que GitHub met dans le jeton de la branche `main`, identifiants numériques du propriétaire et du dépôt compris :
+   `repo:nguekeuarthur@88515280/ponctualite@1451173728:ref:refs/heads/main`. Une même inscription d'application peut
+   porter un identifiant fédéré par dépôt.
+2. **Le paramètre de locataire Fabric** « Les principaux de service peuvent utiliser les API Fabric » activé.
+3. **Le rôle Contributeur** du principal de service sur l'espace de travail :
+   `fab acl set "Ponctualite.Workspace" -I <id d'objet du principal> -R Contributor`.
+4. **Deux variables de dépôt GitHub** (Settings → Secrets and variables → Actions → Variables) : `FABRIC_CLIENT_ID`
+   et `FABRIC_TENANT_ID`. Ce ne sont pas des secrets. Sans `FABRIC_CLIENT_ID`, le déploiement est sauté et seule la
+   vérification tourne.
+
+### Comment le relancer
+
+- Onglet **Actions** du dépôt → *Déploiement Fabric* → *Run workflow* sur `main`.
+- En ligne de commande : `gh workflow run deploy-fabric.yml`, puis `gh run watch`.
+- Si la vérification échoue sur le rapport ou le tableau de bord : relancer `rapport/generer_rapport.py <id du modèle>`
+  ou `temps_reel/generer_tableau_de_bord.py` en local, puis versionner le dossier régénéré.
+- Si le contrôle des planifications échoue : `fab job run-update <notebook> --id <planification> --enable`.
+
 ## Arborescence
 
 ```text
 ponctualite/
+├── .github/workflows/
+│   └── deploy-fabric.yml         vérification et déploiement continu
 ├── config/
 │   ├── trajets.exemple.json      format du périmètre (publié)
 │   └── trajets.json              mon périmètre (jamais publié)
@@ -340,6 +395,7 @@ ponctualite/
 │   ├── generer_tableau_de_bord.py     génère le Real-Time Dashboard (2 pages, 11 tuiles)
 │   └── Ponctualite_TR.KQLDashboard/   définition générée
 ├── scripts/
+│   ├── planifications.py              relève ou compare les planifications des notebooks (utilisé par le flux)
 │   └── tester_ojp.py                  prochains départs d'un arrêt, en ligne de commande
 ├── .env                           clé OJP (jamais publiée)
 ├── fab.ps1                        CLI Fabric sur le tenant du projet

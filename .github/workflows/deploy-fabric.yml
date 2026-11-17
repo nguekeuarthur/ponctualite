@@ -1,0 +1,233 @@
+# Déploiement continu du projet Ponctualité dans l'espace de travail Fabric « Ponctualite ».
+#
+# - Vérification sur chaque pull request et chaque poussée : aucun fichier privé versionné, syntaxe Python,
+#   validité des définitions JSON, indentation des fichiers TMDL, et contrôle que le rapport et le tableau de
+#   bord versionnés sont bien ceux que produisent leurs scripts.
+# - Déploiement seulement sur main : les commandes `fab import` du README, pour les notebooks, le modèle
+#   sémantique, le rapport et le tableau de bord temps réel. Les planifications des notebooks sont relevées
+#   avant et après : le flux échoue si l'une d'elles a disparu ou a été désactivée.
+#
+# Le flux n'exécute aucun notebook et n'a besoin d'aucune donnée privée : ni la configuration des trajets,
+# ni la clé OJP, qui restent dans le lakehouse.
+#
+# Authentification sans secret : GitHub émet un jeton OIDC, que la CLI Fabric échange contre un jeton Entra ID
+# (`fab auth login --federated-token`) grâce à l'identité fédérée déclarée sur l'inscription d'application.
+# Les deux variables de dépôt FABRIC_CLIENT_ID et FABRIC_TENANT_ID sont décrites dans le README.
+
+name: Déploiement Fabric
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "fabric/**"
+      - "rapport/**"
+      - "temps_reel/**"
+      - "scripts/**"
+      - "config/trajets.exemple.json"
+      - ".github/workflows/deploy-fabric.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "fabric/**"
+      - "rapport/**"
+      - "temps_reel/**"
+      - "scripts/**"
+      - "config/trajets.exemple.json"
+      - ".github/workflows/deploy-fabric.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Espace de travail « Ponctualite » et modèle sémantique cible du rapport (voir le README)
+  ID_ESPACE: 6501a002-4c79-4ada-aa1e-3b65a5bf1f9b
+  ID_MODELE: b7104e59-d4c1-4e16-ac35-81a3b14fb4a2
+
+jobs:
+  verifier:
+    name: Vérification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Récupération du dépôt
+        uses: actions/checkout@v5
+
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Aucun fichier privé dans le dépôt
+        run: |
+          prives=$(git ls-files config/trajets.json .env "*.local")
+          if [ -n "$prives" ]; then
+            echo "::error::Fichiers privés versionnés : $prives"
+            exit 1
+          fi
+          for motif in "config/trajets.json" ".env"; do
+            grep -qxF "$motif" .gitignore || { echo "::error::$motif doit rester dans .gitignore"; exit 1; }
+          done
+          echo "La configuration des trajets et la clé d'API restent hors du dépôt"
+
+      - name: Syntaxe des scripts et des notebooks Python
+        run: |
+          git ls-files "*.py" | tr '\n' '\0' | xargs -0 python -m py_compile
+          echo "$(git ls-files '*.py' | wc -l) fichiers Python compilés sans erreur"
+
+      - name: Validité des définitions JSON
+        run: |
+          python - <<'PY'
+          import json, subprocess, sys
+
+          suivis = subprocess.run(["git", "ls-files", "-z"], capture_output=True, text=True, encoding="utf-8").stdout.split("\0")
+          fichiers = [f for f in suivis if f.endswith((".json", ".platform", ".pbir", ".pbism"))]
+          erreurs = []
+          for f in fichiers:
+              try:
+                  json.loads(open(f, encoding="utf-8").read())
+              except ValueError as e:
+                  erreurs.append(f"{f} : {e}")
+          print(f"{len(fichiers)} fichiers JSON contrôlés")
+          if erreurs:
+              print("\n".join(erreurs))
+              sys.exit(1)
+          PY
+
+      - name: Indentation des fichiers TMDL
+        run: |
+          # Le modèle sémantique est indenté par tabulations : une ligne qui commence par une espace casse sa lecture.
+          fautifs=$(grep -rnE "^ +" --include="*.tmdl" rapport/Ponctualite.SemanticModel || true)
+          if [ -n "$fautifs" ]; then
+            echo "$fautifs"
+            echo "::error::Fichiers TMDL indentés par des espaces en début de ligne"
+            exit 1
+          fi
+          echo "$(find rapport/Ponctualite.SemanticModel -name '*.tmdl' | wc -l) fichiers TMDL indentés par tabulations"
+
+      - name: Le rapport versionné correspond au script
+        run: |
+          python rapport/generer_rapport.py "$ID_MODELE"
+          if [ -n "$(git status --porcelain -- rapport/Ponctualite.Report)" ]; then
+            git --no-pager status --short -- rapport/Ponctualite.Report
+            git --no-pager diff --stat -- rapport/Ponctualite.Report
+            echo "::error::rapport/Ponctualite.Report ne correspond pas à generer_rapport.py : régénère le rapport et versionne le résultat."
+            exit 1
+          fi
+          echo "Rapport PBIR identique au dossier versionné"
+
+      - name: Le tableau de bord versionné correspond au script
+        run: |
+          python temps_reel/generer_tableau_de_bord.py
+          if [ -n "$(git status --porcelain -- temps_reel/Ponctualite_TR.KQLDashboard)" ]; then
+            git --no-pager status --short -- temps_reel/Ponctualite_TR.KQLDashboard
+            echo "::error::temps_reel/Ponctualite_TR.KQLDashboard ne correspond pas à generer_tableau_de_bord.py : régénère-le et versionne le résultat."
+            exit 1
+          fi
+          echo "Tableau de bord identique au dossier versionné"
+
+  deployer:
+    name: Déploiement dans Fabric
+    needs: verifier
+    # Jamais depuis une pull request : seul main (poussée ou lancement manuel) déploie.
+    # Sans la variable de dépôt FABRIC_CLIENT_ID (bifurcation non configurée), l'étape est sautée.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.FABRIC_CLIENT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: deploiement-fabric
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # jeton OIDC pour l'identité fédérée
+    env:
+      ESPACE: Ponctualite.Workspace
+    steps:
+      - name: Récupération du dépôt
+        uses: actions/checkout@v5
+
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Installation de la CLI Fabric
+        run: |
+          pip install --quiet ms-fabric-cli==1.8.0
+          fab --version
+
+      - name: Jeton d'identité fédérée (OIDC)
+        env:
+          CLIENT_ID: ${{ vars.FABRIC_CLIENT_ID }}
+          TENANT_ID: ${{ vars.FABRIC_TENANT_ID }}
+        run: |
+          if [ -z "$CLIENT_ID" ] || [ -z "$TENANT_ID" ]; then
+            echo "::error::Variables de dépôt FABRIC_CLIENT_ID et FABRIC_TENANT_ID absentes (Settings → Secrets and variables → Actions → Variables). Voir le README, section CI/CD."
+            exit 1
+          fi
+          jeton=$(curl --silent --show-error --fail \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" | jq -r '.value')
+          if [ -z "$jeton" ] || [ "$jeton" = "null" ]; then
+            echo "::error::GitHub n'a pas émis de jeton OIDC."
+            exit 1
+          fi
+          echo "::add-mask::$jeton"
+          echo "Jeton OIDC obtenu pour $GITHUB_REPOSITORY ($GITHUB_REF)"
+
+          # Contrôle de l'échange auprès d'Entra ID : seule l'erreur éventuelle est affichée, jamais un jeton.
+          reponse=$(curl --silent --show-error \
+            -X POST "https://login.microsoftonline.com/$TENANT_ID/oauth2/v2.0/token" \
+            --data-urlencode "client_id=$CLIENT_ID" \
+            --data-urlencode "grant_type=client_credentials" \
+            --data-urlencode "scope=https://api.fabric.microsoft.com/.default" \
+            --data-urlencode "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer" \
+            --data-urlencode "client_assertion=$jeton")
+          if printf '%s' "$reponse" | jq -e '.access_token' > /dev/null; then
+            echo "Entra ID accepte le jeton OIDC pour l'application $CLIENT_ID"
+          else
+            printf '%s' "$reponse" | jq '{error, error_description}'
+            echo "::error::Entra ID refuse le jeton OIDC : vérifie l'identité fédérée de l'inscription d'application (émetteur, audience et sujet ; le sujet présenté figure dans error_description ci-dessus)."
+            exit 1
+          fi
+          {
+            echo "CLIENT_ID=$CLIENT_ID"
+            echo "TENANT_ID=$TENANT_ID"
+            echo "JETON_OIDC=$jeton"
+          } >> "$GITHUB_ENV"
+
+      - name: Connexion à Fabric
+        run: |
+          fab config set encryption_fallback_enabled true
+          fab auth login -u "$CLIENT_ID" --federated-token "$JETON_OIDC" --tenant "$TENANT_ID"
+          fab auth status
+
+      - name: Planifications avant le déploiement
+        run: python scripts/planifications.py "$ID_ESPACE" "$RUNNER_TEMP/planifications.json"
+
+      - name: Notebooks
+        run: |
+          for dossier in fabric/*.Notebook; do
+            fab import "$ESPACE/$(basename "$dossier")" -i "$dossier" --format .py -f
+          done
+
+      - name: Modèle sémantique Ponctualite
+        run: |
+          fab import "$ESPACE/Ponctualite.SemanticModel" -i rapport/Ponctualite.SemanticModel -f
+          # Recadrage Direct Lake : le modèle relit les tables du lakehouse avec sa nouvelle définition
+          echo '{"type": "full"}' > "$RUNNER_TEMP/rafraichissement.json"
+          fab api -A powerbi -X post "groups/$ID_ESPACE/datasets/$ID_MODELE/refreshes" -i "$RUNNER_TEMP/rafraichissement.json" --output_format json \
+            | python -c "import json, sys; code = json.load(sys.stdin)['result']['data'][0]['status_code']; print('Rafraîchissement demandé : réponse', code); sys.exit(0 if code in (200, 202) else 1)"
+
+      - name: Rapport Ponctualité
+        run: fab import "$ESPACE/Ponctualité.Report" -i rapport/Ponctualite.Report -f
+
+      - name: Tableau de bord temps réel
+        run: fab import "$ESPACE/Ponctualite_TR.KQLDashboard" -i temps_reel/Ponctualite_TR.KQLDashboard -f
+
+      - name: Planifications après le déploiement
+        run: python scripts/planifications.py "$ID_ESPACE" --comparer "$RUNNER_TEMP/planifications.json"
+
+      - name: Éléments déployés
+        run: fab ls "$ESPACE" -l
