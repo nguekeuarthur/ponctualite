@@ -21,6 +21,7 @@
   "trajets": [
     {
       "nom": "Lausanne → Berne",
+      "nom_public": "Trajet 1 · train du matin",
       "jours": "lun-ven",
       "operateur": "SBB",
       "ligne": "IC1",
@@ -30,6 +31,7 @@
     },
     {
       "nom": "Berne → Zurich",
+      "nom_public": "Trajet 2 · correspondance",
       "jours": "lun-ven",
       "operateur": "SBB",
       "ligne": "IC8",
@@ -39,9 +41,11 @@
     }
   ],
   "_note_itineraires": "Un itinéraire enchaîne des trajets, désignés par leur nom. correspondance_min : minutes nécessaires à chaque changement, une valeur par correspondance.",
+  "_note_noms_publics": "nom_public : libellé sans arrêt ni horaire, utilisé par le mode public du rapport (captures, démonstrations).",
   "itineraires": [
     {
       "nom": "Lausanne → Zurich par Berne",
+      "nom_public": "Itinéraire 1 : deux trains",
       "jours": "lun-ven",
       "objectif_arrivee": "10:00",
       "etapes": ["Lausanne → Berne", "Berne → Zurich"],

@@ -20,13 +20,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "fait_itineraire"
+                      "Entity": "dim_itineraire"
                     }
                   },
                   "Property": "itineraire"
                 }
               },
-              "queryRef": "fait_itineraire.itineraire",
+              "queryRef": "dim_itineraire.itineraire",
               "nativeQueryRef": "itineraire"
             },
             {

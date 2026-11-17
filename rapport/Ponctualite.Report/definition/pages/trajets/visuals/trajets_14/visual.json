@@ -48,13 +48,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "fait_trajet"
+                      "Entity": "dim_trajet"
                     }
                   },
                   "Property": "trajet"
                 }
               },
-              "queryRef": "fait_trajet.trajet",
+              "queryRef": "dim_trajet.trajet",
               "nativeQueryRef": "trajet"
             },
             {

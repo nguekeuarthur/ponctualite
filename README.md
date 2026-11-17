@@ -138,6 +138,12 @@ il contient mes arrêts de domicile et mes horaires. `config/trajets.exemple.jso
 copie-le en `trajets.json` et mets tes propres trajets. La clé OJP est dans `.env` (non publié), copiée dans le
 lakehouse sous `Files/config/ojp.env` ; elle n'apparaît ni dans le code, ni dans les sorties des scripts.
 
+Le rapport a deux modes d'affichage. Par défaut, il montre mes trajets sous le nom que je leur ai donné. En mode
+public (`python rapport/generer_rapport.py <id du modèle> --public`), il n'affiche que le libellé générique de chaque
+trajet et de chaque itinéraire (clé `nom_public` de la configuration) et laisse de côté les heures de passage.
+Les données sont les mêmes : seule la colonne affichée change, dans les dimensions `gold.dim_trajet` et
+`gold.dim_itineraire`. C'est ce mode qui sert aux captures et aux démonstrations.
+
 ## Lancer le projet
 
 La CLI Fabric passe par `fab.ps1`, qui utilise un profil Azure isolé (tenant personnel).

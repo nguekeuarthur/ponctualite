@@ -52,6 +52,12 @@ table fait_correspondance
 		summarizeBy: none
 		sourceColumn: correspondance
 
+	/// Libellé générique de la correspondance, affiché par le rapport en mode public
+	column correspondance_public
+		dataType: string
+		summarizeBy: none
+		sourceColumn: correspondance_public
+
 	column arret
 		dataType: string
 		summarizeBy: none

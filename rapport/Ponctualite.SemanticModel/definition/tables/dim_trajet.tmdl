@@ -1,0 +1,30 @@
+/// Trajets suivis : le nom configuré, clé des faits, et un libellé public sans arrêt ni horaire
+table dim_trajet
+
+	column trajet
+		dataType: string
+		isKey
+		summarizeBy: none
+		sourceColumn: trajet
+
+	/// Libellé générique (clé « nom_public » de la configuration) : c'est lui qu'affiche le rapport en mode public
+	column libelle_public
+		dataType: string
+		summarizeBy: none
+		sourceColumn: libelle_public
+		sortByColumn: ordre
+
+	column ordre
+		dataType: int64
+		isHidden
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: ordre
+
+	partition dim_trajet = entity
+		mode: directLake
+		source
+			entityName: dim_trajet
+			schemaName: gold
+			expressionSource: DatabaseQuery
+

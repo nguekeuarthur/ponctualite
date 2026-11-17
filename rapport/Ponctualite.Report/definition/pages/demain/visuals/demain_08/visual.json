@@ -20,13 +20,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "prediction"
+                      "Entity": "dim_trajet"
                     }
                   },
                   "Property": "trajet"
                 }
               },
-              "queryRef": "prediction.trajet",
+              "queryRef": "dim_trajet.trajet",
               "nativeQueryRef": "trajet",
               "active": true
             }

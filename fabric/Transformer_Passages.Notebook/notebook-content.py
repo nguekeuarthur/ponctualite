@@ -26,6 +26,9 @@
 #   et `fait_trajet` (un trajet suivi par jour : « mon train de 07:55 », avec son retard réel à l'arrivée).
 # - **Itinéraires porte à porte** `gold.fait_itineraire` et `gold.fait_correspondance` : les trajets suivis enchaînés,
 #   correspondances comprises. Une correspondance manquée décale tout le reste du voyage.
+# - **Libellés publics** `gold.dim_trajet` et `gold.dim_itineraire` : pour chaque trajet et chaque itinéraire, un
+#   libellé sans arrêt ni horaire (clé `nom_public` de la configuration), qui permet de montrer le rapport sans
+#   dévoiler le périmètre.
 # - **Prévisions jugées** `gold.prediction_jugee` : chaque prévision du notebook `Predire_Retards` rapprochée de ce
 #   qui s'est réellement passé, pour juger le modèle au fil des semaines.
 # - **Modèle sémantique** : en fin de notebook, le modèle Direct Lake est rafraîchi pour que le rapport
@@ -283,6 +286,14 @@ else:
         fait_trajet = fait_trajet.withColumn(c, F.lit(None).cast("string" if c == "conditions_matin" else "double"))
 ecrire(fait_trajet, "gold.fait_trajet")
 
+# Dimension des trajets suivis : le nom configuré (clé des faits) et son libellé public, sans arrêt ni horaire.
+# Le rapport affiche l'un ou l'autre selon son mode ; sans « nom_public », le libellé est un simple numéro.
+dim_trajet = spark.createDataFrame(
+    [(t["nom"], t.get("nom_public") or f"Trajet {i}", i) for i, t in enumerate(CONFIG["trajets"], 1)],
+    "trajet string, libelle_public string, ordre int",
+)
+ecrire(dim_trajet, "gold.dim_trajet")
+
 fait_trajet.orderBy("trajet", "jour").select(
     "jour", "nom_jour", "trajet", "depart_prevu", "arrivee_prevue", "arrivee_reelle", "retard_arrivee_min", "ponctuel", "supprime"
 ).show(100, truncate=False)
@@ -426,10 +437,12 @@ try:
         passages_utiles = s.filter(F.col("arret").isin(arrets_utiles)).select(
             "jour", "course_id", "operateur", "ligne", "arret", "depart_prevu", "depart_reel", "depart_statut",
             "arrivee_prevue", "arrivee_reelle", "arrivee_statut", "supprime", "passage_sans_arret").cache()
-        itineraires, correspondances = [], []
+        itineraires, correspondances, libelles = [], [], []
         for it in definitions:
             etapes = [TRAJET_PAR_NOM[nom] for nom in it["etapes"]]
             n = len(etapes)
+            nom_public = it.get("nom_public") or f"Itinéraire {len(libelles) + 1}"
+            libelles.append((it["nom"], nom_public, len(libelles) + 1))
             delais = it.get("correspondance_min", 3)
             delais = list(delais) if isinstance(delais, list) else [delais] * (n - 1)
             habituelles = [courses_entre(passages_utiles, t) for t in etapes]
@@ -519,6 +532,7 @@ try:
                         F.lit(it["nom"]).alias("itineraire"),
                         F.lit(k - 1).alias("rang"),
                         F.lit(f"{etapes[k - 2]['ligne']} → {etapes[k - 1]['ligne']}").alias("correspondance"),
+                        F.lit(f"{nom_public.split(' : ')[0]}, correspondance {k - 1}").alias("correspondance_public"),
                         F.lit(etapes[k - 1]["depart"]).alias("arret"),
                         F.lit(int(delais[k - 2])).alias("minimum_min"),
                         F.col(f"r{k - 1}_arrivee_eff").alias("arrivee_reelle_amont"),
@@ -537,6 +551,7 @@ try:
                     ).withColumn("marge_reelle_arrondie", F.floor("marge_reelle_min").cast("int"))
                 )
 
+        ecrire(spark.createDataFrame(libelles, "itineraire string, libelle_public string, ordre int"), "gold.dim_itineraire")
         jours = dim_date.select("jour", "nom_jour", "jour_ouvre")
         ecrire(functools.reduce(lambda a, b: a.unionByName(b), itineraires).join(jours, "jour", "left"), "gold.fait_itineraire")
         if correspondances:

@@ -1,6 +1,11 @@
 """Génère le rapport Power BI « Ponctualité » au format PBIR (un dossier par page et par visuel).
 
-Usage : python rapport/generer_rapport.py <id du modèle sémantique Ponctualite>
+Usage : python rapport/generer_rapport.py <id du modèle sémantique Ponctualite> [--public] [--sortie=<dossier>]
+
+Mode public (--public) : le rapport affiche les libellés génériques des trajets et des itinéraires (colonnes
+« libelle_public » des dimensions) et laisse de côté les heures de passage. Les données sont les mêmes, seul
+l'affichage change : c'est ce mode qui sert aux captures et aux démonstrations. --sortie écrit le rapport dans un
+autre dossier que celui du dépôt, pour ne pas toucher à la version versionnée.
 Puis  : .\\ponctualite\\fab.ps1 import "Ponctualite.Workspace/Ponctualité.Report" -i .\\ponctualite\\rapport\\Ponctualite.Report -f
 """
 
@@ -15,6 +20,7 @@ SCHEMA = "https://developer.microsoft.com/json-schemas/fabric/item/report/defini
 ESPACE = "Ponctualite"
 MODELE = "Ponctualite"
 LARGEUR, HAUTEUR, MARGE = 1280, 720, 20
+PUBLIC = "--public" in sys.argv
 
 
 def ecrire(chemin, contenu):
@@ -148,9 +154,14 @@ class Page:
 
 
 def pages():
+    # Libellés des trajets, des itinéraires et des correspondances : le nom configuré, ou le libellé public
+    trajet = colonne("dim_trajet", "libelle_public" if PUBLIC else "trajet")
+    itineraire = colonne("dim_itineraire", "libelle_public" if PUBLIC else "itineraire")
+    correspondance = colonne("fait_correspondance", "correspondance_public" if PUBLIC else "correspondance")
+
     # Page 1 : mes trajets suivis
     trajets = Page("trajets", "Mes trajets")
-    trajets.segment(MARGE, MARGE, 295, 60, colonne("fait_trajet", "trajet"), "Trajet")
+    trajets.segment(MARGE, MARGE, 295, 60, trajet, "Trajet")
     trajets.segment(335, MARGE, 295, 60, colonne("dim_date", "nom_jour"), "Jour de la semaine")
     trajets.segment(650, MARGE, 295, 60, colonne("dim_date", "nom_mois"), "Mois")
     trajets.segment(965, MARGE, 295, 60, colonne("dim_date", "jour_ouvre"), "Jour ouvré")
@@ -168,26 +179,26 @@ def pages():
     )
     trajets.visuel(
         "clusteredColumnChart", MARGE, 220, 820, 230,
-        {"Category": [colonne("dim_date", "jour")], "Series": [colonne("fait_trajet", "trajet")],
+        {"Category": [colonne("dim_date", "jour")], "Series": [trajet],
          "Y": [mesure("fait_trajet", "Retard moyen (min)")]},
         "Retard à l'arrivée, jour par jour",
     )
     trajets.visuel(
         "clusteredBarChart", 860, 220, 400, 230,
-        {"Category": [colonne("fait_trajet", "trajet")], "Y": [mesure("fait_trajet", "Ponctualité")]},
+        {"Category": [trajet], "Y": [mesure("fait_trajet", "Ponctualité")]},
         "Ponctualité par trajet",
     )
     trajets.visuel(
         "clusteredColumnChart", MARGE, 465, 500, 235,
-        {"Category": [colonne("dim_date", "nom_jour")], "Series": [colonne("fait_trajet", "trajet")],
+        {"Category": [colonne("dim_date", "nom_jour")], "Series": [trajet],
          "Y": [mesure("fait_trajet", "Ponctualité")]},
         "Ponctualité selon le jour de la semaine",
     )
     trajets.visuel(
         "tableEx", 540, 465, 720, 235,
         {"Values": [
-            colonne("fait_trajet", "jour"), colonne("fait_trajet", "nom_jour"), colonne("fait_trajet", "trajet"),
-            colonne("fait_trajet", "arrivee_prevue"), colonne("fait_trajet", "arrivee_reelle"),
+            colonne("fait_trajet", "jour"), colonne("fait_trajet", "nom_jour"), trajet,
+            *([] if PUBLIC else [colonne("fait_trajet", "arrivee_prevue"), colonne("fait_trajet", "arrivee_reelle")]),
             mesure("fait_trajet", "Retard moyen (min)"), mesure("fait_trajet", "Suppressions"),
         ]},
         "Les pires jours",
@@ -207,7 +218,7 @@ def pages():
     porte.visuel(
         "tableEx", MARGE, 100, 1240, 125,
         {"Values": [
-            colonne("fait_itineraire", "itineraire"), mesure("fait_itineraire", "Voyages"),
+            itineraire, mesure("fait_itineraire", "Voyages"),
             mesure("fait_itineraire", "Part des voyages comme prévu"), mesure("fait_itineraire", "Taux de correspondance manquée"),
             mesure("fait_itineraire", "Arrivées avant l'objectif, porte à porte"), mesure("fait_itineraire", "Voyages arrivés après l'objectif"),
             mesure("fait_itineraire", "Retard porte à porte moyen (min)"), mesure("fait_itineraire", "Retard porte à porte max (min)"),
@@ -217,20 +228,20 @@ def pages():
     )
     porte.visuel(
         "clusteredBarChart", MARGE, 240, 600, 220,
-        {"Category": [colonne("fait_itineraire", "statut")], "Series": [colonne("fait_itineraire", "itineraire")],
+        {"Category": [colonne("fait_itineraire", "statut")], "Series": [itineraire],
          "Y": [mesure("fait_itineraire", "Voyages")]},
         "Comment se passent les voyages",
     )
     porte.visuel(
         "lineChart", 640, 240, 620, 220,
-        {"Category": [colonne("dim_date", "debut_mois")], "Series": [colonne("fait_itineraire", "itineraire")],
+        {"Category": [colonne("dim_date", "debut_mois")], "Series": [itineraire],
          "Y": [mesure("fait_itineraire", "Taux de correspondance manquée")]},
         "Voyages avec une correspondance manquée, mois après mois",
     )
     porte.visuel(
         "tableEx", MARGE, 475, 600, 225,
         {"Values": [
-            colonne("fait_correspondance", "correspondance"), mesure("fait_correspondance", "Correspondances"),
+            correspondance, mesure("fait_correspondance", "Correspondances"),
             mesure("fait_correspondance", "Part des correspondances tenues"), mesure("fait_correspondance", "Marge prévue (min)"),
             mesure("fait_correspondance", "Minimum nécessaire (min)"), mesure("fait_correspondance", "Marge réelle moyenne (min)"),
             mesure("fait_correspondance", "Attente supplémentaire médiane (min)"),
@@ -239,7 +250,7 @@ def pages():
     )
     porte.visuel(
         "clusteredColumnChart", 640, 475, 620, 225,
-        {"Category": [colonne("fait_correspondance", "marge_reelle_arrondie")], "Series": [colonne("fait_correspondance", "correspondance")],
+        {"Category": [colonne("fait_correspondance", "marge_reelle_arrondie")], "Series": [correspondance],
          "Y": [mesure("fait_correspondance", "Correspondances")]},
         "Marge réelle à chaque correspondance, en minutes",
     )
@@ -303,7 +314,7 @@ def pages():
     )
     # Page 5 : la météo du matin explique-t-elle les retards ?
     meteo = Page("meteo", "Météo")
-    meteo.segment(MARGE, MARGE, 400, 60, colonne("fait_trajet", "trajet"), "Trajet")
+    meteo.segment(MARGE, MARGE, 400, 60, trajet, "Trajet")
     meteo.segment(440, MARGE, 400, 60, colonne("fait_trajet", "conditions_matin"), "Conditions du matin")
     meteo.segment(860, MARGE, 400, 60, colonne("dim_date", "jour_ouvre"), "Jour ouvré")
     meteo.cartes(
@@ -324,20 +335,20 @@ def pages():
     )
     meteo.visuel(
         "clusteredColumnChart", 540, 220, 720, 230,
-        {"Category": [colonne("fait_trajet", "conditions_matin")], "Series": [colonne("fait_trajet", "trajet")],
+        {"Category": [colonne("fait_trajet", "conditions_matin")], "Series": [trajet],
          "Y": [mesure("fait_trajet", "Retard moyen (min)")]},
         "Retard moyen selon les conditions, par trajet",
     )
     meteo.visuel(
         "scatterChart", MARGE, 465, 620, 235,
         {"Category": [colonne("fait_trajet", "jour")], "X": [mesure("fait_trajet", "Température min. du matin (°C)")],
-         "Y": [mesure("fait_trajet", "Retard moyen (min)")], "Series": [colonne("fait_trajet", "trajet")]},
+         "Y": [mesure("fait_trajet", "Retard moyen (min)")], "Series": [trajet]},
         "Chaque jour : température minimale du matin et retard à l'arrivée",
     )
     meteo.visuel(
         "scatterChart", 660, 465, 600, 235,
         {"Category": [colonne("fait_trajet", "jour")], "X": [mesure("fait_trajet", "Précipitations du matin (mm)")],
-         "Y": [mesure("fait_trajet", "Retard moyen (min)")], "Series": [colonne("fait_trajet", "trajet")]},
+         "Y": [mesure("fait_trajet", "Retard moyen (min)")], "Series": [trajet]},
         "Chaque jour : précipitations du matin et retard à l'arrivée",
     )
     # Page 6 : le risque de demain, et ce que vaut le modèle
@@ -359,7 +370,7 @@ def pages():
     demain.visuel(
         "tableEx", MARGE, 220, 820, 240,
         {"Values": [
-            colonne("prediction", "jour_cible"), colonne("prediction", "trajet"), colonne("prediction", "niveau"),
+            colonne("prediction", "jour_cible"), trajet, colonne("prediction", "niveau"),
             mesure("prediction", "Risque de retard"), colonne("prediction", "taux_historique"),
             colonne("prediction", "taux_10_derniers_jours"), colonne("prediction", "temp_min_prevue"),
             colonne("prediction", "precip_prevue_mm"), colonne("prediction", "rafale_prevue_ms"),
@@ -370,7 +381,7 @@ def pages():
     )
     demain.visuel(
         "clusteredBarChart", 860, 220, 400, 240,
-        {"Category": [colonne("prediction", "trajet")], "Y": [mesure("prediction", "Risque de retard")]},
+        {"Category": [trajet], "Y": [mesure("prediction", "Risque de retard")]},
         "Risque par trajet",
         tri=(mesure("prediction", "Risque de retard"), "Descending"),
     )
@@ -392,7 +403,7 @@ def pages():
     )
     # Page 7 : les prévisions passées face à ce qui s'est réellement produit
     jugement = Page("jugement", "Prévisions contre réalité")
-    jugement.segment(MARGE, MARGE, 400, 60, colonne("prediction_jugee", "trajet"), "Trajet")
+    jugement.segment(MARGE, MARGE, 400, 60, trajet, "Trajet")
     jugement.segment(440, MARGE, 400, 60, colonne("prediction_jugee", "niveau"), "Niveau annoncé")
     jugement.segment(860, MARGE, 400, 60, colonne("prediction_jugee", "resultat"), "Résultat")
     jugement.cartes(
@@ -429,7 +440,7 @@ def pages():
     jugement.visuel(
         "tableEx", 540, 465, 720, 235,
         {"Values": [
-            colonne("prediction_jugee", "jour_cible"), colonne("prediction_jugee", "trajet"), colonne("prediction_jugee", "niveau"),
+            colonne("prediction_jugee", "jour_cible"), trajet, colonne("prediction_jugee", "niveau"),
             colonne("prediction_jugee", "resultat"), colonne("prediction_jugee", "probabilite_retard"),
             colonne("prediction_jugee", "retard_reel_min"), colonne("prediction_jugee", "supprime"),
         ]},
@@ -440,15 +451,18 @@ def pages():
 
 
 def main():
-    if len(sys.argv) != 2:
+    arguments = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if len(arguments) != 1:
         sys.exit(__doc__)
-    id_modele = sys.argv[1]
-    if DOSSIER.exists():
-        shutil.rmtree(DOSSIER)
-    definition = DOSSIER / "definition"
+    id_modele = arguments[0]
+    sortie = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--sortie=")), None)
+    dossier = Path(sortie) / DOSSIER.name if sortie else DOSSIER
+    if dossier.exists():
+        shutil.rmtree(dossier)
+    definition = dossier / "definition"
 
     ecrire(
-        DOSSIER / ".platform",
+        dossier / ".platform",
         {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
             "metadata": {"type": "Report", "displayName": "Ponctualité"},
@@ -456,7 +470,7 @@ def main():
         },
     )
     ecrire(
-        DOSSIER / "definition.pbir",
+        dossier / "definition.pbir",
         {
             "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
             "version": "4.0",
@@ -488,7 +502,7 @@ def main():
             },
         },
     )
-    theme = DOSSIER / "StaticResources" / "SharedResources" / "BaseThemes" / "CY24SU10.json"
+    theme = dossier / "StaticResources" / "SharedResources" / "BaseThemes" / "CY24SU10.json"
     theme.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(ICI / "theme" / "CY24SU10.json", theme)
 
@@ -499,7 +513,8 @@ def main():
     )
     for p in liste:
         p.enregistrer(definition / "pages")
-    print(f"Rapport généré : {sum(len(p.visuels) for p in liste)} visuels sur {len(liste)} pages")
+    mode = " (mode public)" if PUBLIC else ""
+    print(f"Rapport généré{mode} : {sum(len(p.visuels) for p in liste)} visuels sur {len(liste)} pages")
 
 
 if __name__ == "__main__":

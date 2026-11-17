@@ -26,3 +26,23 @@ relationship itineraire_date
 relationship correspondance_date
 	fromColumn: fait_correspondance.jour
 	toColumn: dim_date.jour
+
+relationship trajet_dimension
+	fromColumn: fait_trajet.trajet
+	toColumn: dim_trajet.trajet
+
+relationship prediction_trajet
+	fromColumn: prediction.trajet
+	toColumn: dim_trajet.trajet
+
+relationship prediction_jugee_trajet
+	fromColumn: prediction_jugee.trajet
+	toColumn: dim_trajet.trajet
+
+relationship itineraire_dimension
+	fromColumn: fait_itineraire.itineraire
+	toColumn: dim_itineraire.itineraire
+
+relationship correspondance_itineraire
+	fromColumn: fait_correspondance.itineraire
+	toColumn: dim_itineraire.itineraire
