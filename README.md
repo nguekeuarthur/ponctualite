@@ -323,7 +323,8 @@ Le blocage a été vérifié par deux exercices, le 17.11.2026 :
 Le réglage se trouve dans les paramètres du modèle sémantique, section Actualiser : « Maintenir vos données Direct
 Lake à jour », à désactiver. Le rapport ne se met alors à jour que par les rafraîchissements demandés en fin de
 notebook et par le flux de déploiement. Ce réglage vit dans le service et non dans le dépôt, et aucune API publique ne
-permet de le lire : il se règle à la main sur un nouvel espace de travail, et se contrôle à la main.
+permet de le lire : il se règle à la main sur un nouvel espace de travail, et se contrôle à la main. Il survit à un
+redéploiement du modèle par le flux GitHub, vérifié le 18.11.2026.
 
 ## Le tableau de bord temps réel
 
