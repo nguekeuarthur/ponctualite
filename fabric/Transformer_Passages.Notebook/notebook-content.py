@@ -759,23 +759,41 @@ journal("qualite", "\n".join(bilan))
 # - Recette validée : toutes les tables sont publiées.
 # - Recette bloquée : seule la table de la recette est publiée, pour que le rapport montre l'échec ; les autres
 #   tables restent sur leur dernière version validée, et le notebook se termine en erreur.
-# Le rafraîchissement lui-même ne fait jamais échouer la transformation : si le modèle n'est pas déployé, il est ignoré.
+# L'actualisation automatique du modèle étant désactivée, ce rafraîchissement est le seul chemin vers le rapport :
+# s'il est refusé, le notebook échoue, sinon le rapport prendrait du retard sans que rien ne le signale. Le résultat
+# est noté dans Files/journal/publication.txt. Seule exception : un modèle pas encore déployé est ignoré.
 MODELE_SEMANTIQUE = "Ponctualite"
+publication_refusee = None
 
 try:
     import sempy.fabric as fabric
 
-    if RECETTE_BLOQUEE:
+    try:
+        modele_deploye = MODELE_SEMANTIQUE in set(fabric.list_datasets()["Dataset Name"])
+    except Exception as e:  # liste illisible : le rafraîchissement est tenté quand même
+        print(f"Liste des modèles sémantiques illisible ({type(e).__name__}) : rafraîchissement tenté quand même")
+        modele_deploye = True
+
+    if not modele_deploye:
+        journal("publication", f"Modèle sémantique {MODELE_SEMANTIQUE} absent de l'espace de travail : rien à publier")
+        print(f"Modèle sémantique {MODELE_SEMANTIQUE} absent de l'espace de travail : rien à publier")
+    elif RECETTE_BLOQUEE:
         demande = fabric.refresh_dataset(dataset=MODELE_SEMANTIQUE, refresh_type="full", objects=[{"table": "qualite"}])
+        journal("publication", f"Recette bloquée : seule la table de la recette est publiée ({demande})")
         print(f"Modèle sémantique {MODELE_SEMANTIQUE} : seule la table de la recette est publiée ({demande})")
     else:
         demande = fabric.refresh_dataset(dataset=MODELE_SEMANTIQUE, refresh_type="full")
+        journal("publication", f"Recette validée : toutes les tables sont publiées ({demande})")
         print(f"Modèle sémantique {MODELE_SEMANTIQUE} : rafraîchissement demandé ({demande})")
-except Exception as e:  # modèle absent, droits manquants ou service indisponible
-    print(f"Modèle sémantique {MODELE_SEMANTIQUE} non rafraîchi : {type(e).__name__} : {e}")
+except Exception as e:  # droits manquants ou service indisponible
+    publication_refusee = f"{type(e).__name__} : {e}"
+    journal("publication", "ÉCHEC : le modèle sémantique n'a pas été rafraîchi\n" + publication_refusee)
+    print(f"Modèle sémantique {MODELE_SEMANTIQUE} non rafraîchi : {publication_refusee}")
 
 if RECETTE_BLOQUEE:
     raise RuntimeError("Recette de qualité en échec, tables non publiées : " + " ; ".join(c[0] for c in bloquants))
+if publication_refusee:
+    raise RuntimeError("Tables gold écrites mais non publiées, le rafraîchissement du modèle a été refusé : " + publication_refusee[:400])
 
 # METADATA ********************
 

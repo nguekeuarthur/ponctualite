@@ -3,17 +3,17 @@
 # - Vérification sur chaque pull request et chaque poussée : aucun fichier privé versionné, syntaxe Python,
 #   validité des définitions JSON, indentation des fichiers TMDL, pipeline qui ne lance que des notebooks du
 #   dépôt, et contrôle que le rapport et le tableau de bord versionnés sont bien ceux que produisent leurs scripts.
-# - Déploiement seulement sur main : les commandes `fab import` du README, pour les notebooks, le pipeline de la
-#   chaîne du matin, le modèle sémantique, le rapport et le tableau de bord temps réel. Les planifications des
-#   notebooks et du pipeline sont relevées avant et après : le flux échoue si l'une d'elles a disparu ou a été
-#   désactivée.
+# - Déploiement seulement sur main : les commandes `fab import` du README, pour les notebooks, le modèle
+#   sémantique, le rapport et le tableau de bord temps réel. Les planifications des notebooks et du pipeline sont
+#   relevées avant et après : le flux échoue si l'une d'elles a disparu ou a été désactivée.
 #
 # Le flux n'exécute ni notebook ni pipeline et n'a besoin d'aucune donnée privée : ni la configuration des
 # trajets, ni la clé OJP, qui restent dans le lakehouse.
 #
-# Un notebook lancé par un pipeline s'exécute sous l'identité de qui a modifié le pipeline en dernier. Comme le
-# flux le réimporte, c'est l'identité du flux : la chaîne du matin tourne donc sous le principal de service,
-# Contributeur de l'espace de travail, et non sous un compte personnel.
+# Le pipeline de la chaîne du matin n'est PAS importé par le flux. Un notebook lancé par un pipeline s'exécute sous
+# l'identité de qui a modifié le pipeline en dernier : importé par le flux, il tournerait sous le principal de
+# service, à qui le rafraîchissement du modèle sémantique est refusé depuis un notebook (403). Le pipeline est donc
+# importé à la main, et le flux vérifie seulement que la version déployée est bien celle du dépôt.
 #
 # Authentification sans secret : GitHub émet un jeton OIDC, que la CLI Fabric échange contre un jeton Entra ID
 # (`fab auth login --federated-token`) grâce à l'identité fédérée déclarée sur l'inscription d'application.
@@ -220,12 +220,6 @@ jobs:
             fab import "$ESPACE/$(basename "$dossier")" -i "$dossier" --format .py -f
           done
 
-      - name: Pipeline de la chaîne du matin
-        run: |
-          # Après les notebooks : le pipeline les désigne par leur identifiant dans l'espace de travail
-          python scripts/controler_pipeline.py fabric/Chaine_Matin.DataPipeline --espace "$ID_ESPACE"
-          fab import "$ESPACE/Chaine_Matin.DataPipeline" -i fabric/Chaine_Matin.DataPipeline -f
-
       - name: Modèle sémantique Ponctualite
         run: |
           fab import "$ESPACE/Ponctualite.SemanticModel" -i rapport/Ponctualite.SemanticModel -f
@@ -245,3 +239,10 @@ jobs:
 
       - name: Éléments déployés
         run: fab ls "$ESPACE" -l
+
+      - name: Le pipeline déployé est celui du dépôt
+        run: |
+          # En dernier : tout le reste est déjà déployé si cette étape demande un import manuel du pipeline.
+          mkdir -p "$RUNNER_TEMP/deploye"
+          fab export "$ESPACE/Chaine_Matin.DataPipeline" -o "$RUNNER_TEMP/deploye" -f
+          python scripts/controler_pipeline.py fabric/Chaine_Matin.DataPipeline --espace "$ID_ESPACE"             --deploye "$RUNNER_TEMP/deploye/Chaine_Matin.DataPipeline"

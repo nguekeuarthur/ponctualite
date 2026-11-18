@@ -269,19 +269,34 @@ ecrire(nouvelle, "gold.prediction")
 # Dernière étape : demander au modèle sémantique Direct Lake de relire les tables de la prévision (« recadrage »),
 # pour que la page « Demain » du rapport affiche la prévision qui vient d'être écrite. Seules ces trois tables sont
 # publiées ici : les autres tables gold ne le sont que par la transformation du matin, une fois leur recette validée.
-# L'étape ne fait jamais échouer la prévision : si le modèle n'est pas encore déployé, elle est ignorée.
+# L'actualisation automatique du modèle étant désactivée, ce rafraîchissement est le seul chemin vers le rapport :
+# s'il est refusé, le notebook échoue. Seule exception : un modèle pas encore déployé est ignoré.
 MODELE_SEMANTIQUE = "Ponctualite"
+publication_refusee = None
 
 try:
     import sempy.fabric as fabric
 
-    demande = fabric.refresh_dataset(
-        dataset=MODELE_SEMANTIQUE, refresh_type="full",
-        objects=[{"table": "prediction"}, {"table": "modele_evaluation"}, {"table": "modele_importance"}],
-    )
-    print(f"Modèle sémantique {MODELE_SEMANTIQUE} : rafraîchissement demandé ({demande})")
-except Exception as e:  # modèle absent, droits manquants ou service indisponible
-    print(f"Modèle sémantique {MODELE_SEMANTIQUE} non rafraîchi : {type(e).__name__} : {e}")
+    try:
+        modele_deploye = MODELE_SEMANTIQUE in set(fabric.list_datasets()["Dataset Name"])
+    except Exception as e:  # liste illisible : le rafraîchissement est tenté quand même
+        print(f"Liste des modèles sémantiques illisible ({type(e).__name__}) : rafraîchissement tenté quand même")
+        modele_deploye = True
+
+    if not modele_deploye:
+        print(f"Modèle sémantique {MODELE_SEMANTIQUE} absent de l'espace de travail : rien à publier")
+    else:
+        demande = fabric.refresh_dataset(
+            dataset=MODELE_SEMANTIQUE, refresh_type="full",
+            objects=[{"table": "prediction"}, {"table": "modele_evaluation"}, {"table": "modele_importance"}],
+        )
+        print(f"Modèle sémantique {MODELE_SEMANTIQUE} : rafraîchissement demandé ({demande})")
+except Exception as e:  # droits manquants ou service indisponible
+    publication_refusee = f"{type(e).__name__} : {e}"
+    print(f"Modèle sémantique {MODELE_SEMANTIQUE} non rafraîchi : {publication_refusee}")
+
+if publication_refusee:
+    raise RuntimeError("Prévision écrite mais non publiée, le rafraîchissement du modèle a été refusé : " + publication_refusee[:400])
 
 # METADATA ********************
 

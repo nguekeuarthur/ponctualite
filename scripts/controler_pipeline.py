@@ -1,17 +1,21 @@
-"""Contrôle la définition d'un pipeline Fabric versionné : il ne doit lancer que des notebooks du dépôt.
+"""Contrôle la définition d'un pipeline Fabric versionné.
 
-Usage : python scripts/controler_pipeline.py <dossier du pipeline>                           contrôle hors ligne
-        python scripts/controler_pipeline.py <dossier du pipeline> --espace <id de l'espace>  et contrôle des identifiants
+Usage : python scripts/controler_pipeline.py <dossier du pipeline>
+        python scripts/controler_pipeline.py <dossier du pipeline> --espace <id de l'espace>
+        python scripts/controler_pipeline.py <dossier du pipeline> --deploye <dossier exporté par « fab export »>
 
 La définition d'un pipeline désigne chaque notebook par son identifiant dans l'espace de travail. Un identifiant faux
 ne se voit pas à l'import : le pipeline échoue seulement à l'exécution. Ce script le détecte avant.
 
-- Hors ligne : chaque activité notebook porte le nom d'un dossier `fabric/<nom>.Notebook`, et chaque dépendance
+- Sans option : chaque activité notebook porte le nom d'un dossier `fabric/<nom>.Notebook`, et chaque dépendance
   désigne une activité qui existe.
-- Avec `--espace` : l'identifiant de chaque notebook est bien celui du notebook de ce nom dans l'espace de travail.
+- `--espace` : l'identifiant de chaque notebook est bien celui du notebook de ce nom dans l'espace de travail.
   La CLI Fabric doit être connectée ; son exécutable est « fab », ou celui que désigne la variable d'environnement FAB.
+- `--deploye` : le pipeline déployé, exporté au préalable, est bien celui du dépôt. Le pipeline est importé à la main
+  et non par le flux de déploiement, car ses notebooks s'exécutent sous l'identité de qui l'a modifié en dernier.
 """
 
+import argparse
 import json
 import os
 import subprocess
@@ -34,12 +38,20 @@ def notebooks_de_l_espace(espace):
     return {e["displayName"]: e["id"] for e in reponse["text"].get("value", [])}
 
 
+def lire(dossier):
+    return json.loads((Path(dossier) / "pipeline-content.json").read_text(encoding="utf-8"))
+
+
 def main():
-    if len(sys.argv) not in (2, 4) or (len(sys.argv) == 4 and sys.argv[2] != "--espace"):
-        sys.exit(__doc__)
-    dossier = Path(sys.argv[1])
-    espace = sys.argv[3] if len(sys.argv) == 4 else None
-    activites = json.loads((dossier / "pipeline-content.json").read_text(encoding="utf-8"))["properties"]["activities"]
+    arguments = argparse.ArgumentParser(description="Contrôle la définition d'un pipeline Fabric versionné.")
+    arguments.add_argument("dossier", help="dossier du pipeline dans le dépôt")
+    arguments.add_argument("--espace", help="id de l'espace de travail, pour contrôler les identifiants des notebooks")
+    arguments.add_argument("--deploye", help="dossier du pipeline exporté de l'espace de travail, à comparer au dépôt")
+    options = arguments.parse_args()
+
+    dossier = Path(options.dossier)
+    definition = lire(dossier)
+    activites = definition["properties"]["activities"]
     noms = [a["name"] for a in activites]
     erreurs = [f"activité en double : {n}" for n in sorted(set(noms)) if noms.count(n) > 1]
 
@@ -53,22 +65,30 @@ def main():
         if not (RACINE / "fabric" / f"{a['name']}.Notebook").is_dir():
             erreurs.append(f"{a['name']} : aucun dossier fabric/{a['name']}.Notebook dans le dépôt")
 
-    if espace and not erreurs:
-        reels = notebooks_de_l_espace(espace)
+    if options.espace and not erreurs:
+        reels = notebooks_de_l_espace(options.espace)
         for a in notebooks:
             proprietes = a["typeProperties"]
-            if proprietes.get("workspaceId") != espace:
-                erreurs.append(f"{a['name']} : espace de travail {proprietes.get('workspaceId')} au lieu de {espace}")
+            if proprietes.get("workspaceId") != options.espace:
+                erreurs.append(f"{a['name']} : espace de travail {proprietes.get('workspaceId')} au lieu de {options.espace}")
             if a["name"] not in reels:
                 erreurs.append(f"{a['name']} : notebook absent de l'espace de travail")
             elif proprietes.get("notebookId") != reels[a["name"]]:
                 erreurs.append(f"{a['name']} : identifiant {proprietes.get('notebookId')} au lieu de {reels[a['name']]}")
 
+    if options.deploye and not erreurs and lire(options.deploye) != definition:
+        erreurs.append(
+            "le pipeline déployé n'est pas celui du dépôt. Le réimporter à la main, sous un compte utilisateur :\n"
+            f"    fab import \"<espace>.Workspace/{dossier.name}\" -i {dossier.as_posix()} -f"
+        )
+
     if erreurs:
         sys.exit(f"{dossier.name} :\n  " + "\n  ".join(erreurs))
-    enchainement = " → ".join(noms)
-    print(f"{dossier.name} : {len(activites)} activités, dont {len(notebooks)} notebooks ({enchainement})")
-    print("Identifiants des notebooks conformes à l'espace de travail" if espace else "Contrôle hors ligne réussi")
+    print(f"{dossier.name} : {len(activites)} activités, dont {len(notebooks)} notebooks ({' → '.join(noms)})")
+    if options.espace:
+        print("Identifiants des notebooks conformes à l'espace de travail")
+    if options.deploye:
+        print("Pipeline déployé identique à celui du dépôt")
 
 
 if __name__ == "__main__":
