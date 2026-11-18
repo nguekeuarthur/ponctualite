@@ -81,6 +81,9 @@ Eventhouse Ponctualite_TR, table departs : un instantané par relevé et par dé
           sait-on qu'un train sera en retard ? »
 ```
 
+Chaque matin, le pipeline `Chaine_Matin` enchaîne le chargement des passages, la météo et la transformation. Les
+tables gold ne sont publiées dans le rapport qu'une fois leur recette de qualité validée.
+
 ## Résultats sur 16 mois (14.07.2025 → 13.11.2026, jours ouvrés)
 
 Sept trajets suivis sur 350 jours ouvrés, soit 2'119 trajets mesurés : 85 % arrivent avec moins de 3 minutes de retard
@@ -327,8 +330,18 @@ du modèle sémantique était refusé (403), sans bruit, et le rapport ne se met
 # Importer le pipeline (après les notebooks : il les désigne par leur identifiant), puis le planifier
 python .\ponctualite\scripts\controler_pipeline.py .\ponctualite\fabric\Chaine_Matin.DataPipeline --espace <id de l'espace>
 .\ponctualite\fab.ps1 import "Ponctualite.Workspace/Chaine_Matin.DataPipeline" -i .\ponctualite\fabric\Chaine_Matin.DataPipeline -f
-.\ponctualite\fab.ps1 job run-sch "Ponctualite.Workspace/Chaine_Matin.DataPipeline" -i "{'enabled': true, 'configuration': {'type': 'Daily', 'times': ['06:00'], 'startDateTime': '2026-11-18T00:00:00', 'endDateTime': '2026-12-28T23:59:00', 'localTimeZoneId': 'W. Europe Standard Time'}}"
+.\ponctualite\fab.ps1 get "Ponctualite.Workspace/Chaine_Matin.DataPipeline" -q id
+.\ponctualite\fab.ps1 api -X post "workspaces/<id de l'espace>/items/<id du pipeline>/jobs/Pipeline/schedules" -i planification.json
 ```
+
+Avec, dans `planification.json`, l'heure suisse grâce au fuseau `W. Europe Standard Time` :
+
+```json
+{"enabled": true, "configuration": {"type": "Daily", "times": ["06:00"], "startDateTime": "2026-11-18T00:00:00", "endDateTime": "2026-12-28T23:59:00", "localTimeZoneId": "W. Europe Standard Time"}}
+```
+
+Les trois anciennes planifications des notebooks sont désactivées et non supprimées :
+`fab job run-update <notebook> --id <planification> --disable`.
 
 Sur un autre espace de travail, remplacer dans `pipeline-content.json` l'identifiant de l'espace et ceux des trois
 notebooks : `controler_pipeline.py` signale ceux qui ne correspondent pas.
