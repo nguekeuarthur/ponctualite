@@ -1,6 +1,6 @@
 {
   "properties": {
-    "description": "Chaîne du matin. Chaque notebook part dès que le précédent a fini : la capacité d'essai ne sert qu'un travail Spark à la fois. Une panne de la météo n'empêche pas la transformation, mais le pipeline finit quand même en échec pour qu'elle se voie.",
+    "description": "Chaîne du matin. Chaque notebook part quand le précédent a fini et que la capacité est de nouveau libre : la capacité d'essai ne sert qu'un travail à la fois et ne rend pas le calcul tout de suite, d'où les attentes et les nouveaux essais. Une panne de la météo n'empêche pas la transformation, mais le pipeline finit quand même en échec pour qu'elle se voie.",
     "activities": [
       {
         "name": "Charger_Istdaten",
@@ -9,7 +9,7 @@
         "dependsOn": [],
         "policy": {
           "timeout": "0.01:00:00",
-          "retry": 1,
+          "retry": 4,
           "retryIntervalInSeconds": 120,
           "secureOutput": false,
           "secureInput": false
@@ -20,18 +20,36 @@
         }
       },
       {
+        "name": "Attente_Capacite_1",
+        "description": "Laisse la capacité d'essai rendre le calcul du notebook précédent.",
+        "type": "Wait",
+        "dependsOn": [
+          {
+            "activity": "Charger_Istdaten",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "waitTimeInSeconds": 240
+        }
+      },
+      {
         "name": "Charger_Meteo",
         "description": "Météo MétéoSuisse des stations suivies, jusqu'à gold.meteo_jour.",
         "type": "TridentNotebook",
         "dependsOn": [
           {
-            "activity": "Charger_Istdaten",
-            "dependencyConditions": ["Succeeded"]
+            "activity": "Attente_Capacite_1",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
           }
         ],
         "policy": {
           "timeout": "0.01:00:00",
-          "retry": 1,
+          "retry": 4,
           "retryIntervalInSeconds": 120,
           "secureOutput": false,
           "secureInput": false
@@ -42,23 +60,37 @@
         }
       },
       {
+        "name": "Attente_Capacite_2",
+        "description": "Même attente, que la météo ait réussi ou échoué.",
+        "type": "Wait",
+        "dependsOn": [
+          {
+            "activity": "Charger_Meteo",
+            "dependencyConditions": [
+              "Completed"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "waitTimeInSeconds": 240
+        }
+      },
+      {
         "name": "Transformer_Passages",
-        "description": "Silver et gold, recette de qualité, puis publication. Part même si la météo a échoué. Jamais relancé : une recette bloquée doit rester un échec.",
+        "description": "Silver et gold, recette de qualité, puis publication. Part même si la météo a échoué. Deux nouveaux essais seulement : ils servent aux refus de la capacité, pas à repasser une recette bloquée.",
         "type": "TridentNotebook",
         "dependsOn": [
           {
-            "activity": "Charger_Istdaten",
-            "dependencyConditions": ["Succeeded"]
-          },
-          {
-            "activity": "Charger_Meteo",
-            "dependencyConditions": ["Completed"]
+            "activity": "Attente_Capacite_2",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
           }
         ],
         "policy": {
           "timeout": "0.00:45:00",
-          "retry": 0,
-          "retryIntervalInSeconds": 30,
+          "retry": 2,
+          "retryIntervalInSeconds": 120,
           "secureOutput": false,
           "secureInput": false
         },
@@ -74,11 +106,15 @@
         "dependsOn": [
           {
             "activity": "Charger_Meteo",
-            "dependencyConditions": ["Failed"]
+            "dependencyConditions": [
+              "Failed"
+            ]
           },
           {
             "activity": "Transformer_Passages",
-            "dependencyConditions": ["Completed"]
+            "dependencyConditions": [
+              "Completed"
+            ]
           }
         ],
         "typeProperties": {
