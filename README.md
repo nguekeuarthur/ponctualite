@@ -310,12 +310,20 @@ signale. Le contrôle d'unicité compare désormais les clés comme Power BI les
 Exercice d'alerte : déposer un fichier vide `Files/config/simuler_echec_recette` dans le lakehouse fait échouer la
 recette suivante, pour vérifier que le blocage fonctionne. Le fichier est retiré aussitôt.
 
-Limite, vérifiée par l'exercice du 17.11.2026 : le notebook s'est bien terminé en erreur, le verdict « Bloquée » a été
-publié et le fichier d'exercice retiré, mais une table refusée a quand même été relue par le modèle. La cause est
-l'actualisation automatique des modèles Direct Lake, active par défaut : un modèle chargé en mémoire relit une table
-dès qu'elle change, sans attendre le verdict. La porte n'est étanche qu'une fois ce réglage désactivé, dans les
-paramètres du modèle sémantique, section Actualisation, « Maintenir vos données Direct Lake à jour ». Le rapport ne se
-met alors à jour que par les rafraîchissements demandés en fin de notebook et par le flux de déploiement.
+Le blocage a été vérifié par deux exercices, le 17.11.2026 :
+
+1. **Avec les réglages par défaut, la porte fuit.** Le notebook s'est bien terminé en erreur, le verdict « Bloquée » a
+   été publié et le fichier d'exercice retiré, mais une table refusée a quand même été relue par le modèle. La cause
+   est l'actualisation automatique des modèles Direct Lake, active par défaut : un modèle chargé en mémoire relit une
+   table dès qu'elle change, sans attendre le verdict.
+2. **Une fois ce réglage désactivé, la porte tient.** La table réécrite par le notebook est restée invisible du
+   rapport : dix minutes après l'échec, le modèle montrait toujours la version précédente, et seule la table de la
+   recette avait été publiée. Le lendemain matin, la recette validée a tout publié d'un coup.
+
+Le réglage se trouve dans les paramètres du modèle sémantique, section Actualiser : « Maintenir vos données Direct
+Lake à jour », à désactiver. Le rapport ne se met alors à jour que par les rafraîchissements demandés en fin de
+notebook et par le flux de déploiement. Ce réglage vit dans le service et non dans le dépôt, et aucune API publique ne
+permet de le lire : il se règle à la main sur un nouvel espace de travail, et se contrôle à la main.
 
 ## Le tableau de bord temps réel
 
