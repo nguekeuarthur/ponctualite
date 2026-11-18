@@ -1,14 +1,19 @@
 # Déploiement continu du projet Ponctualité dans l'espace de travail Fabric « Ponctualite ».
 #
 # - Vérification sur chaque pull request et chaque poussée : aucun fichier privé versionné, syntaxe Python,
-#   validité des définitions JSON, indentation des fichiers TMDL, et contrôle que le rapport et le tableau de
-#   bord versionnés sont bien ceux que produisent leurs scripts.
-# - Déploiement seulement sur main : les commandes `fab import` du README, pour les notebooks, le modèle
-#   sémantique, le rapport et le tableau de bord temps réel. Les planifications des notebooks sont relevées
-#   avant et après : le flux échoue si l'une d'elles a disparu ou a été désactivée.
+#   validité des définitions JSON, indentation des fichiers TMDL, pipeline qui ne lance que des notebooks du
+#   dépôt, et contrôle que le rapport et le tableau de bord versionnés sont bien ceux que produisent leurs scripts.
+# - Déploiement seulement sur main : les commandes `fab import` du README, pour les notebooks, le pipeline de la
+#   chaîne du matin, le modèle sémantique, le rapport et le tableau de bord temps réel. Les planifications des
+#   notebooks et du pipeline sont relevées avant et après : le flux échoue si l'une d'elles a disparu ou a été
+#   désactivée.
 #
-# Le flux n'exécute aucun notebook et n'a besoin d'aucune donnée privée : ni la configuration des trajets,
-# ni la clé OJP, qui restent dans le lakehouse.
+# Le flux n'exécute ni notebook ni pipeline et n'a besoin d'aucune donnée privée : ni la configuration des
+# trajets, ni la clé OJP, qui restent dans le lakehouse.
+#
+# Un notebook lancé par un pipeline s'exécute sous l'identité de qui a modifié le pipeline en dernier. Comme le
+# flux le réimporte, c'est l'identité du flux : la chaîne du matin tourne donc sous le principal de service,
+# Contributeur de l'espace de travail, et non sous un compte personnel.
 #
 # Authentification sans secret : GitHub émet un jeton OIDC, que la CLI Fabric échange contre un jeton Entra ID
 # (`fab auth login --federated-token`) grâce à l'identité fédérée déclarée sur l'inscription d'application.
@@ -105,6 +110,9 @@ jobs:
             exit 1
           fi
           echo "$(find rapport/Ponctualite.SemanticModel -name '*.tmdl' | wc -l) fichiers TMDL indentés par tabulations"
+
+      - name: Le pipeline ne lance que des notebooks du dépôt
+        run: python scripts/controler_pipeline.py fabric/Chaine_Matin.DataPipeline
 
       - name: Le rapport versionné correspond au script
         run: |
@@ -211,6 +219,12 @@ jobs:
           for dossier in fabric/*.Notebook; do
             fab import "$ESPACE/$(basename "$dossier")" -i "$dossier" --format .py -f
           done
+
+      - name: Pipeline de la chaîne du matin
+        run: |
+          # Après les notebooks : le pipeline les désigne par leur identifiant dans l'espace de travail
+          python scripts/controler_pipeline.py fabric/Chaine_Matin.DataPipeline --espace "$ID_ESPACE"
+          fab import "$ESPACE/Chaine_Matin.DataPipeline" -i fabric/Chaine_Matin.DataPipeline -f
 
       - name: Modèle sémantique Ponctualite
         run: |

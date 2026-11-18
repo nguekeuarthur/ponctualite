@@ -1,0 +1,91 @@
+{
+  "properties": {
+    "description": "Chaîne du matin. Chaque notebook part dès que le précédent a fini : la capacité d'essai ne sert qu'un travail Spark à la fois. Une panne de la météo n'empêche pas la transformation, mais le pipeline finit quand même en échec pour qu'elle se voie.",
+    "activities": [
+      {
+        "name": "Charger_Istdaten",
+        "description": "Passages réels de la veille, dans bronze.passages. Un jour déjà chargé n'est jamais rechargé.",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 120,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "19f43eb4-37a2-41ea-8293-6a0bab7f256d",
+          "workspaceId": "6501a002-4c79-4ada-aa1e-3b65a5bf1f9b"
+        }
+      },
+      {
+        "name": "Charger_Meteo",
+        "description": "Météo MétéoSuisse des stations suivies, jusqu'à gold.meteo_jour.",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "Charger_Istdaten",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 120,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "0dd7af4e-5246-4a57-a1de-b28aadc412f5",
+          "workspaceId": "6501a002-4c79-4ada-aa1e-3b65a5bf1f9b"
+        }
+      },
+      {
+        "name": "Transformer_Passages",
+        "description": "Silver et gold, recette de qualité, puis publication. Part même si la météo a échoué. Jamais relancé : une recette bloquée doit rester un échec.",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "Charger_Istdaten",
+            "dependencyConditions": ["Succeeded"]
+          },
+          {
+            "activity": "Charger_Meteo",
+            "dependencyConditions": ["Completed"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:45:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "1c99abde-2d79-4588-96cf-f36921626acf",
+          "workspaceId": "6501a002-4c79-4ada-aa1e-3b65a5bf1f9b"
+        }
+      },
+      {
+        "name": "Signaler_Meteo",
+        "description": "Ne s'exécute que si la météo a échoué : met le pipeline en échec une fois la transformation passée.",
+        "type": "Fail",
+        "dependsOn": [
+          {
+            "activity": "Charger_Meteo",
+            "dependencyConditions": ["Failed"]
+          },
+          {
+            "activity": "Transformer_Passages",
+            "dependencyConditions": ["Completed"]
+          }
+        ],
+        "typeProperties": {
+          "message": "Charger_Meteo a échoué : la transformation a tourné avec la météo des jours précédents.",
+          "errorCode": "METEO_EN_ECHEC"
+        }
+      }
+    ]
+  }
+}

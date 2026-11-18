@@ -1,10 +1,11 @@
-"""Relève l'état des planifications des notebooks d'un espace de travail Fabric, ou le compare à un relevé précédent.
+"""Relève l'état des planifications des notebooks et des pipelines d'un espace de travail Fabric, ou le compare à un
+relevé précédent.
 
 Usage : python scripts/planifications.py <id de l'espace> releve.json              écrit le relevé
         python scripts/planifications.py <id de l'espace> --comparer releve.json   échoue si une planification a changé
 
-Le déploiement continu réimporte les notebooks : ce script vérifie qu'aucune planification n'a disparu ni été
-désactivée au passage. La CLI Fabric doit être connectée ; son exécutable est « fab », ou celui que désigne la
+Le déploiement continu réimporte les notebooks et le pipeline : ce script vérifie qu'aucune planification n'a disparu
+ni été désactivée au passage. La CLI Fabric doit être connectée ; son exécutable est « fab », ou celui que désigne la
 variable d'environnement FAB.
 """
 
@@ -27,32 +28,37 @@ def api(chemin):
     return reponse["text"]
 
 
+# Type d'élément Fabric → type de travail planifiable
+TRAVAUX = {"Notebook": "RunNotebook", "DataPipeline": "Pipeline"}
+
+
 def relever(espace):
-    """Par notebook, la liste de ses planifications : identifiant, active ou non, rythme."""
+    """Par notebook ou pipeline, la liste de ses planifications : identifiant, active ou non, rythme."""
     etat = {}
-    for element in api(f"workspaces/{espace}/items?type=Notebook").get("value", []):
-        planifications = api(f"workspaces/{espace}/items/{element['id']}/jobs/RunNotebook/schedules").get("value", [])
-        etat[element["displayName"]] = sorted(
-            (
-                {
-                    "id": p["id"],
-                    "active": bool(p.get("enabled")),
-                    "etat": (p.get("enabledDetail") or {}).get("enabledEvalState"),
-                    "rythme": f"{p['configuration'].get('type')} {p['configuration'].get('times') or p['configuration'].get('interval')}",
-                }
-                for p in planifications
-            ),
-            key=lambda p: p["id"],
-        )
+    for type_element, travail in TRAVAUX.items():
+        for element in api(f"workspaces/{espace}/items?type={type_element}").get("value", []):
+            planifications = api(f"workspaces/{espace}/items/{element['id']}/jobs/{travail}/schedules").get("value", [])
+            etat[element["displayName"]] = sorted(
+                (
+                    {
+                        "id": p["id"],
+                        "active": bool(p.get("enabled")),
+                        "etat": (p.get("enabledDetail") or {}).get("enabledEvalState"),
+                        "rythme": f"{p['configuration'].get('type')} {p['configuration'].get('times') or p['configuration'].get('interval')}",
+                    }
+                    for p in planifications
+                ),
+                key=lambda p: p["id"],
+            )
     return etat
 
 
 def afficher(etat):
-    for notebook in sorted(etat):
-        if not etat[notebook]:
-            print(f"  {notebook} : aucune planification")
-        for p in etat[notebook]:
-            print(f"  {notebook} : {p['rythme']}, {'active' if p['active'] else 'INACTIVE'} ({p['etat']})")
+    for element in sorted(etat):
+        if not etat[element]:
+            print(f"  {element} : aucune planification")
+        for p in etat[element]:
+            print(f"  {element} : {p['rythme']}, {'active' if p['active'] else 'INACTIVE'} ({p['etat']})")
 
 
 def main():
@@ -69,13 +75,13 @@ def main():
         print("Planifications après le déploiement :")
         afficher(apres)
         ecarts = []
-        for notebook, planifications in avant.items():
-            restantes = {p["id"]: p for p in apres.get(notebook, [])}
+        for element, planifications in avant.items():
+            restantes = {p["id"]: p for p in apres.get(element, [])}
             for p in planifications:
                 if p["id"] not in restantes:
-                    ecarts.append(f"{notebook} : la planification « {p['rythme']} » a disparu")
+                    ecarts.append(f"{element} : la planification « {p['rythme']} » a disparu")
                 elif p["active"] and not restantes[p["id"]]["active"]:
-                    ecarts.append(f"{notebook} : la planification « {p['rythme']} » a été désactivée")
+                    ecarts.append(f"{element} : la planification « {p['rythme']} » a été désactivée")
         if ecarts:
             sys.exit("Planifications modifiées par le déploiement :\n" + "\n".join(ecarts))
         print("Aucune planification n'a disparu ni été désactivée.")
