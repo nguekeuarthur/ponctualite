@@ -220,22 +220,26 @@ La capacité d'essai n'exécute qu'un travail Spark à la fois : attendre la fin
 05:00–09:59 et une étiquette « conditions du matin » (neige au sol, gel, pluie, vent fort, bruine, sec).
 `Transformer_Passages` l'accroche à chaque trajet suivi par la station de l'arrêt de départ.
 
-Chaîne quotidienne planifiée dans Fabric (heure suisse) : `Charger_Istdaten` à 06:00, `Charger_Meteo` à 06:15,
-`Transformer_Passages` à 06:30, et `Predire_Retards` à 20:00 pour le lendemain. Le collecteur temps réel tourne toutes
+Chaîne quotidienne planifiée dans Fabric (heure suisse) : le pipeline `Chaine_Matin` part à 06:00 et enchaîne
+`Charger_Istdaten`, `Charger_Meteo` et `Transformer_Passages` (voir « Orchestration » plus bas), et
+`Predire_Retards` tourne seul à 20:00 pour le lendemain. Le collecteur temps réel tourne toutes
 les 5 minutes. Les étapes facultatives de la transformation (itinéraires, prévisions jugées) ne l'arrêtent jamais :
 en cas d'erreur, la trace complète est écrite dans `Files/journal/<étape>.txt` du lakehouse.
 La capacité d'essai ne sert qu'un travail à la fois : pendant chaque travail Spark de la chaîne, le relevé du
 collecteur échoue (erreur 430), soit trois à cinq relevés perdus par jour sur 288.
 Attention : un gros travail Spark (rechargement d'archives) sature la capacité d'essai, fait échouer les
 exécutions planifiées et Fabric suspend alors la planification après quelques échecs ; la réactiver avec
-`fab job run-update <notebook> --id <planification> --enable`.
+`fab job run-update <notebook ou pipeline> --id <planification> --enable`.
 Les fichiers des archives s'appellent `AAAA-MM-JJ_IstDaten.csv` (majuscules) alors que les quotidiens en ligne
 s'appellent `AAAA-MM-JJ_istdaten.csv`.
 
 `Transformer_Passages` et `Predire_Retards` se terminent par un rafraîchissement du modèle sémantique
 (`sempy.fabric.refresh_dataset`), pour que le rapport lise les tables du jour et la prévision du soir. Sans lui, le
 modèle Direct Lake pouvait rester en retard : le 16.11.2026, la première requête de la journée renvoyait encore l'état
-du 10.11. L'étape n'interrompt jamais un notebook : si le modèle n'est pas encore déployé, elle est ignorée.
+du 10.11. Depuis que l'actualisation automatique du modèle est désactivée (voir « Qualité des données »), ce
+rafraîchissement est le seul chemin vers le rapport : s'il est refusé, le notebook échoue, et
+`Transformer_Passages` en garde la trace dans `Files/journal/publication.txt`. Seul un modèle pas encore déployé
+est ignoré.
 
 ```powershell
 # 4. Temps réel : tester la clé OJP, envoyer la clé dans le lakehouse, déployer et planifier le collecteur
@@ -279,6 +283,56 @@ python .\ponctualite\temps_reel\generer_tableau_de_bord.py
 La définition suit la structure des tableaux de bord publiés par Microsoft dans `fabric-toolbox` (schéma 60) ; un
 `icon` vide dans une règle de couleur ou une clé `title` à la racine font échouer le chargement.
 
+## Orchestration : la chaîne du matin en pipeline
+
+Les trois notebooks du matin partaient à heure fixe, à 06:00, 06:15 et 06:30. Rien ne les liait : un chargement en
+échec n'empêchait pas la transformation de tourner sur des données de la veille. Le pipeline
+[`Chaine_Matin`](fabric/Chaine_Matin.DataPipeline/pipeline-content.json) les enchaîne.
+
+| Activité | Part si | Nouveaux essais |
+|---|---|:---:|
+| `Charger_Istdaten` | 06:00, heure suisse | 4 |
+| `Attente_Capacite_1`, 4 minutes | le chargement a réussi | |
+| `Charger_Meteo` | l'attente est finie | 4 |
+| `Attente_Capacite_2`, 4 minutes | la météo est terminée, réussie ou non | |
+| `Transformer_Passages` | l'attente est finie | 2 |
+| `Signaler_Meteo` | la météo a échoué et la transformation est terminée | |
+
+- **Un chargement en échec arrête la chaîne.** Sans les passages de la veille, la transformation ne part pas.
+- **Une panne de la météo ne prive pas du rapport du jour.** La transformation part quand même, avec la météo des
+  jours précédents, puis `Signaler_Meteo` met le pipeline en échec pour que la panne se voie.
+- **Une recette bloquée reste un échec.** `Transformer_Passages` se termine en erreur, et le pipeline avec lui.
+
+Ce que la capacité d'essai impose, constaté aux essais du 18.11.2026 :
+
+- **Les attentes.** La capacité ne sert qu'un travail à la fois et ne rend pas le calcul tout de suite : un notebook
+  lancé une seconde après le précédent est refusé (erreur 430). Avec les horaires fixes, le quart d'heure d'écart
+  masquait ce délai.
+- **Les nouveaux essais.** Le collecteur temps réel occupe la capacité toutes les 5 minutes : un notebook qui tombe sur
+  son passage est refusé, puis repart deux minutes plus tard. Ces essais repassent aussi une recette bloquée, deux
+  fois au plus : c'est le prix accepté pour ne pas perdre une journée sur un simple refus de la capacité.
+- **La durée.** 19 minutes de bout en bout, dont 8 d'attente : les données du jour sont prêtes vers 06:20 au lieu de
+  06:38. Sur une capacité plus grande, les attentes seraient inutiles.
+
+Sous quelle identité tourne le pipeline : un notebook lancé par un pipeline s'exécute sous l'identité de **qui a
+modifié le pipeline en dernier**, et non de qui l'a planifié. Importé par le flux GitHub, le pipeline faisait tourner
+les notebooks sous le principal de service : la transformation et la recette réussissaient, mais le rafraîchissement
+du modèle sémantique était refusé (403), sans bruit, et le rapport ne se mettait plus à jour. Deux conséquences :
+
+- **Le pipeline s'importe à la main**, sous un compte utilisateur. Le flux GitHub ne l'importe pas : il vérifie que la
+  version déployée est bien celle du dépôt, et échoue sinon.
+- **Un rafraîchissement refusé fait maintenant échouer le notebook**, au lieu de passer inaperçu.
+
+```powershell
+# Importer le pipeline (après les notebooks : il les désigne par leur identifiant), puis le planifier
+python .\ponctualite\scripts\controler_pipeline.py .\ponctualite\fabric\Chaine_Matin.DataPipeline --espace <id de l'espace>
+.\ponctualite\fab.ps1 import "Ponctualite.Workspace/Chaine_Matin.DataPipeline" -i .\ponctualite\fabric\Chaine_Matin.DataPipeline -f
+.\ponctualite\fab.ps1 job run-sch "Ponctualite.Workspace/Chaine_Matin.DataPipeline" -i "{'enabled': true, 'configuration': {'type': 'Daily', 'times': ['06:00'], 'startDateTime': '2026-11-18T00:00:00', 'endDateTime': '2026-12-28T23:59:00', 'localTimeZoneId': 'W. Europe Standard Time'}}"
+```
+
+Sur un autre espace de travail, remplacer dans `pipeline-content.json` l'identifiant de l'espace et ceux des trois
+notebooks : `controler_pipeline.py` signale ceux qui ne correspondent pas.
+
 ## Qualité des données : contrôler avant de publier
 
 Le rapport ne montre les tables du jour que si elles ont passé une recette. `Transformer_Passages` écrit les tables
@@ -301,7 +355,8 @@ tant qu'il ne l'est pas, le rapport reste sur la version précédente des tables
 - **Une alerte** est consignée sans rien bloquer : un fichier source en retard n'est pas une faute de la transformation.
 - `Predire_Retards`, le soir, ne publie que ses trois tables. Il ne peut donc pas publier à la place de la
   transformation des tables qu'une recette aurait refusées le matin.
-- Chaque exécution ajoute ses résultats à `gold.qualite` et laisse son verdict dans `Files/journal/qualite.txt`.
+- Chaque exécution ajoute ses résultats à `gold.qualite`, laisse son verdict dans `Files/journal/qualite.txt` et le
+  résultat de la publication dans `Files/journal/publication.txt`.
 
 Pourquoi cette recette : Spark distingue deux graphies d'un même nom d'arrêt, Power BI non. La dimension des arrêts a
 ainsi porté un doublon de clé pendant une semaine, et choisir une gare dans le rapport échouait sans que rien ne le
@@ -426,13 +481,18 @@ tourne à chaque pull request et à chaque poussée sur `main` qui touche `fabri
 | Validité JSON de toutes les définitions (rapport PBIR, tableau de bord, `.platform`) | ✔ | ✔ |
 | Indentation des fichiers TMDL du modèle sémantique | ✔ | ✔ |
 | Rapport et tableau de bord régénérés, puis comparés aux dossiers versionnés | ✔ | ✔ |
+| Pipeline : chaque activité lance un notebook du dépôt, chaque dépendance existe | ✔ | ✔ |
 | `fab import` des six notebooks, du modèle sémantique (suivi d'un rafraîchissement), du rapport et du tableau de bord | | ✔ |
-| Planifications relevées avant et après : le flux échoue si l'une d'elles a disparu ou a été désactivée | | ✔ |
+| Planifications des notebooks et du pipeline relevées avant et après : le flux échoue si l'une d'elles a disparu ou a été désactivée | | ✔ |
+| Pipeline déployé comparé à celui du dépôt, identifiants des notebooks compris | | ✔ |
 
 Ce que le flux ne fait pas, volontairement :
 
-- **Il n'exécute aucun notebook.** La capacité d'essai ne sert qu'un travail Spark à la fois ; les données restent
-  l'affaire de la chaîne quotidienne planifiée.
+- **Il n'exécute ni notebook ni pipeline.** La capacité d'essai ne sert qu'un travail Spark à la fois ; les données
+  restent l'affaire de la chaîne quotidienne planifiée.
+- **Il n'importe pas le pipeline.** Les notebooks d'un pipeline tournent sous l'identité de qui l'a modifié en
+  dernier : importé par le flux, il les ferait tourner sous le principal de service, à qui le rafraîchissement du
+  modèle est refusé (voir « Orchestration »). Le flux contrôle seulement que le pipeline déployé est celui du dépôt.
 - **Il ne touche à aucune donnée privée.** La configuration des trajets et la clé OJP vivent dans le lakehouse
   (`Files/config/`), envoyées une fois à la main. Le flux n'en a pas besoin.
 - **Il ne crée pas les planifications.** Elles sont posées une fois (voir « Lancer le projet ») ; le flux vérifie
@@ -462,7 +522,9 @@ vérifie qu'Entra ID l'accepte, puis la CLI Fabric l'échange contre un jeton En
 - En ligne de commande : `gh workflow run deploy-fabric.yml`, puis `gh run watch`.
 - Si la vérification échoue sur le rapport ou le tableau de bord : relancer `rapport/generer_rapport.py <id du modèle>`
   ou `temps_reel/generer_tableau_de_bord.py` en local, puis versionner le dossier régénéré.
-- Si le contrôle des planifications échoue : `fab job run-update <notebook> --id <planification> --enable`.
+- Si le contrôle des planifications échoue : `fab job run-update <notebook ou pipeline> --id <planification> --enable`.
+- Si le contrôle du pipeline échoue : le réimporter à la main avec la commande de la section « Orchestration », puis
+  relancer le flux.
 
 ## Arborescence
 
@@ -475,6 +537,7 @@ ponctualite/
 │   ├── trajets.exemple.json      format du périmètre (publié)
 │   └── trajets.json              mon périmètre (jamais publié)
 ├── fabric/
+│   ├── Chaine_Matin.DataPipeline/       pipeline du matin : chargements, transformation, recette, publication
 │   ├── Charger_Istdaten.Notebook/       bronze, fichiers quotidiens (Spark)
 │   ├── Charger_Archives.Notebook/       bronze, archives mensuelles (Spark)
 │   ├── Charger_Meteo.Notebook/          météo MétéoSuisse : bronze, silver, gold (Spark)
@@ -491,7 +554,8 @@ ponctualite/
 │   └── Ponctualite_TR.KQLDashboard/   définition générée
 ├── scripts/
 │   ├── capturer_rapport.py            exporte des pages du rapport en images, pour ce README
-│   ├── planifications.py              relève ou compare les planifications des notebooks (utilisé par le flux)
+│   ├── controler_pipeline.py          contrôle le pipeline : notebooks, identifiants, version déployée (utilisé par le flux)
+│   ├── planifications.py              relève ou compare les planifications des notebooks et du pipeline (utilisé par le flux)
 │   └── tester_ojp.py                  prochains départs d'un arrêt, en ligne de commande
 ├── .env                           clé OJP (jamais publiée)
 ├── fab.ps1                        CLI Fabric sur le tenant du projet
